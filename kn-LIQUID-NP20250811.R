@@ -1,4 +1,5 @@
 #KN-liquid - np
+#data - 20250916, changed KN-97 from the repeated expreriment
 Sys.setenv(LANG = "en")
 #libraries
 library(tidyverse)
@@ -17,7 +18,7 @@ library(htmlwidgets)
 library(webshot)
 library(magick)
 #open liquid np data
-np_liquid <- readxl::read_xlsx("C:/Users/Ieva/rprojects/OTHER DATA/kn_liquid_np_20250811.xlsx")
+np_liquid <- readxl::read_xlsx("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/kn_liquid_np_20250916.xlsx")
 #seprate names of the genes
 raiska_np <- colnames(np_liquid[19:22])
 #fix rownames
@@ -47,7 +48,7 @@ rownames(KN_data) <- KN_data$patient_id_aud
 np_liquid$patient_id_aud %in% KN_data$patient_id_aud 
 #add
 KN_data_full <- left_join(KN_data, np_liquid, by = "patient_id_aud")
-#saveRDS(KN_data_full, "C:/Users/Ieva/rprojects/OTHER DATA/KN_data_np_tissue_full20250813.RDS")
+#saveRDS(KN_data_full, "C:/Users/Ieva/rprojects/OTHER DATA/KN_data_np_tissue_full20250916.RDS")
 #make groupings of diseases#################
 OC_HGSOC_BENIGN<- KN_data_full[c(KN_data_full$Grupė_Ieva != "Other"),] #51 cases left
 OC_HGSOC_BENIGN$tumor <- relevel(factor(OC_HGSOC_BENIGN$Grupė_Ieva), ref = "Benign")
@@ -84,7 +85,7 @@ var_results_oc_b <- KN_data_full[, c(15,32:35)] %>%
                        value[tumor  == unique(tumor )[2]])$p.value,
     .groups = "drop"
   ) 
-var_results_oc_b 
+var_results_oc_b # equal for all 4
 
 #var test, benign hgsoc
 var_results_benign_hgsoc <- KN_data_full[, c(3,32:35)] %>%
@@ -97,7 +98,7 @@ var_results_benign_hgsoc <- KN_data_full[, c(3,32:35)] %>%
     .groups = "drop"
   ) 
 #%>%filter(p_value < 0.05)
-var_results_benign_hgsoc 
+var_results_benign_hgsoc #all equal
 
 #var test, benign hgsoc
 var_results_benign_other<- KN_data_full[, c(3,32:35)] %>%
@@ -110,7 +111,7 @@ var_results_benign_other<- KN_data_full[, c(3,32:35)] %>%
     .groups = "drop"
   ) 
 #%>%filter(p_value < 0.05)
-var_results_benign_other 
+var_results_benign_other  #all equal
 
 #var test, other hgsoc
 var_results_other_other<- KN_data_full[, c(3,32:35)] %>%
@@ -144,7 +145,7 @@ t.test_3groups <- Group3_table %>%
          #detailed=TRUE 
   )%>%
   mutate(across(c(p.adj), ~ format(., scientific = FALSE)))  # Format p-values to remove scientific notation
-t.test_3groups #not applicable to non normal sample groups
+t.test_3groups #not applicable to non normal sample groups (OC benign dll1 and other ctnnb1)
 
 #Wilcoxon test (not normal)
 wilcox.test_3groups <- Group3_table %>%
@@ -162,7 +163,6 @@ each.vs.ref_sig <-
   )
 
 #boxplot 3 groups ########################################
-
 #rename to lt 
 Group3_table$Grupė_Ieva
 Group3_table2 <- Group3_table %>%
@@ -202,9 +202,8 @@ OC_plot <- ggplot(Group3_table2, aes(x=Grupė_Ieva , y=value, fill = variable)) 
 
 OC_plot
 
-
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/np_boxplot20250811.png",
+png("C:/Users/Ieva/rprojects/outputs_all/np_boxplot20250916.png",
     width = 1000, height = 1100, res = 200)
 OC_plot
 dev.off()
@@ -230,7 +229,8 @@ mean_expression_OC2 <- exp_df2 %>%
   mutate(fold_change_HB = log2(2^(`HGSOC` - `Benign`))) %>% #benign vs hgsoc 
   mutate(fold_change_HO = log2(2^(`HGSOC` - `Other`))) %>% #others vs hgsoc 
   mutate(fold_change_OB = log2(2^(`Other` / `Benign`))) #benign vs others
-mean_expression_OC2 #problem with TCEAL4
+mean_expression_OC2 
+
 
 #ROC BH########################################################
 roc_results_np<- lapply(raiska_np, function(col) {
@@ -246,13 +246,12 @@ roc_plot <- function() {
   par(pty = "s") #sets square
   plot.roc(roc_results_np[["NOTCH2_DELTA"]], print.auc = F, col = "#dcbeff",
            cex.main=0.8, 
-           main ="Gerybinių patologijų atskyrimas nuo HGSOC",
+           main ="Gerybinių pokyčių atskyrimas nuo HGSOC",
            xlab = "Specifiškumas", 
            ylab = "Jautrumas") #title
   lines(roc_results_np[["CTNNB1_DELTA"]], col = "#911eb4", lwd =2) 
   lines(roc_results_np[["DLL1_DELTA"]], col ="#ffd8b1", lwd =2) 
   lines(roc_results_np[["HES1_DELTA"]], col = "#42d4f4", lwd =2) 
-  #SUDĖTA NE PAGAL PAVEIKLĄ BET PAGAL AUC DYDI
   legend("bottomright", legend = c( expression(italic("NOTCH2")),
                                     expression(italic("CTNNB1")),
                                     expression(italic("DLL1")), 
@@ -266,7 +265,7 @@ roc_plot <- function() {
 roc_plot()
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/bh_roc_np20250811.png",
+png("C:/Users/Ieva/rprojects/outputs_all/bh_roc_np20250916.png",
     width = 1000, height = 1000, res = 200)
 roc_plot()
 dev.off()
@@ -296,7 +295,7 @@ gt_table_tumor <- results_tumor %>%
   gt() %>%
   tab_header(
     title = "ROC kriterijai", 
-    subtitle = "Gerybinių patologijų atskyrimas nuo HGSOC") %>%
+    subtitle = "Gerybinių pokyčių atskyrimas nuo HGSOC") %>%
   fmt_number(
     columns = everything(),
     decimals = 3
@@ -308,14 +307,13 @@ gt_table_tumor <- results_tumor %>%
 #show
 gt_table_tumor
 
-
 #save table
 gtsave(gt_table_tumor,
-       filename = "C:/Users/Ieva/rprojects/outputs_all/bh_roc_table_np_20250811.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/bh_roc_table_np_20250916.png")
 
 #Combine the images
-roc_image1<- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_roc_np20250811.png")
-table_image1 <- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_roc_table_np_20250811.png")
+roc_image1<- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_roc_np20250916.png")
+table_image1 <- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_roc_table_np_20250916.png")
 
 combined_image1 <- image_append(c(roc_image1, table_image1), stack = F)
 
@@ -333,7 +331,7 @@ combined_image1 <- image_append(c(roc_image1_padded, table_image1_padded), stack
 
 # Save the combined image
 image_write(combined_image1, 
-            "C:/Users/Ieva/rprojects/outputs_all/bh_roc_full_np_20250811.png")
+            "C:/Users/Ieva/rprojects/outputs_all/bh_roc_full_np_20250916.png")
 
 #ROC OH########################################################
 roc_results_np_oh<- lapply(raiska_np, function(col) {
@@ -370,7 +368,7 @@ roc_plot2 <- function() {
 roc_plot2()
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/oh_roc_np20250811.png",
+png("C:/Users/Ieva/rprojects/outputs_all/oh_roc_np20250916.png",
     width = 1000, height = 1000, res = 200)
 roc_plot2()
 dev.off()
@@ -378,11 +376,14 @@ dev.off()
 #roc table OH################################
 #get roc features
 coords_results_np_oh<- lapply(roc_results_np_oh, function(roc_obj) {
-  coords(roc_obj, "best", ret = c("threshold", "accuracy", "sensitivity",
+  coords(roc_obj, "best", method = "youden", ret = c("threshold", "accuracy", "sensitivity",
                                   "specificity", "precision", "npv", "tpr", "fpr"),
          transpose = FALSE)
 })
 coords_results_np_oh
+#there is CTNNB1 two thresholds, choose first
+# Keep only the first row of CTNNB1_DELTA
+coords_results_np_oh$CTNNB1_DELTA <- coords_results_np_oh$CTNNB1_DELTA[1, , drop = FALSE]
 #create df
 results_tumor2<- data.frame(
   Predictor = raiska_np,
@@ -412,14 +413,13 @@ gt_table_tumor2 <- results_tumor2 %>%
 #show
 gt_table_tumor2
 
-
 #save table
 gtsave(gt_table_tumor2,
-       filename = "C:/Users/Ieva/rprojects/outputs_all/oh_roc_table_np_20250811.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/oh_roc_table_np_20250916.png")
 
 #Combine the images
-roc_image2<- image_read("C:/Users/Ieva/rprojects/outputs_all/oh_roc_np20250811.png")
-table_image2 <- image_read("C:/Users/Ieva/rprojects/outputs_all/oh_roc_table_np_20250811.png")
+roc_image2<- image_read("C:/Users/Ieva/rprojects/outputs_all/oh_roc_np20250916.png")
+table_image2 <- image_read("C:/Users/Ieva/rprojects/outputs_all/oh_roc_table_np_20250916.png")
 
 combined_image2 <- image_append(c(roc_image2, table_image2), stack = F)
 
@@ -432,12 +432,11 @@ max_width2 <- max(roc_info2$width, table_info2$width)
 roc_image1_padded2 <- image_extent(roc_image2, geometry = geometry_area(max_width2, roc_info2$height), gravity = "center", color = "white")
 table_image1_padded2 <- image_extent(table_image2, geometry = geometry_area(max_width2, table_info2$height), gravity = "center", color = "white")
 
-
 combined_image2 <- image_append(c(roc_image1_padded2, table_image1_padded2), stack = T)
 
 # Save the combined image
 image_write(combined_image2, 
-            "C:/Users/Ieva/rprojects/outputs_all/oh_roc_full_np_20250811.png")
+            "C:/Users/Ieva/rprojects/outputs_all/oh_roc_full_np_20250916.png")
 
 #ROC BO########################################################
 roc_results_np_bo<- lapply(raiska_np, function(col) {
@@ -454,7 +453,7 @@ roc_plot3 <- function() {
   par(pty = "s") #sets square
   plot.roc(roc_results_np_bo[["NOTCH2_DELTA"]], print.auc = F, col = "#dcbeff",
            cex.main=0.8, 
-           main ="Gerybinių patologijų atskyrimas nuo I tipo KV",
+           main ="Gerybinių pokyčių atskyrimas nuo I tipo KV",
            xlab = "Specifiškumas", 
            ylab = "Jautrumas") #title
   lines(roc_results_np_bo[["CTNNB1_DELTA"]], col = "#911eb4", lwd =2) 
@@ -474,7 +473,7 @@ roc_plot3 <- function() {
 roc_plot3()
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/bo_roc_np20250811.png",
+png("C:/Users/Ieva/rprojects/outputs_all/bo_roc_np20250916.png",
     width = 1000, height = 1000, res = 200)
 roc_plot3()
 dev.off()
@@ -504,7 +503,7 @@ gt_table_tumor3 <- results_tumor3 %>%
   gt() %>%
   tab_header(
     title = "ROC kriterijai", 
-    subtitle = "HGSOC atskyrimas nuo kitų KV") %>%
+    subtitle = "Gerybinių pokyčių atskyrimas nuo kitų KV") %>%
   fmt_number(
     columns = everything(),
     decimals = 3
@@ -519,11 +518,11 @@ gt_table_tumor3
 
 #save table
 gtsave(gt_table_tumor3,
-       filename = "C:/Users/Ieva/rprojects/outputs_all/bo_roc_table_np_20250811.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/bo_roc_table_np_20250916.png")
 
 #Combine the images
-roc_image3<- image_read("C:/Users/Ieva/rprojects/outputs_all/bo_roc_np20250811.png")
-table_image3 <- image_read("C:/Users/Ieva/rprojects/outputs_all/bo_roc_table_np_20250811.png")
+roc_image3<- image_read("C:/Users/Ieva/rprojects/outputs_all/bo_roc_np20250916.png")
+table_image3 <- image_read("C:/Users/Ieva/rprojects/outputs_all/bo_roc_table_np_20250916.png")
 
 combined_image3 <- image_append(c(roc_image3, table_image3), stack = F)
 
@@ -541,7 +540,7 @@ combined_image3 <- image_append(c(roc_image1_padded3, table_image1_padded3), sta
 
 # Save the combined image
 image_write(combined_image3, 
-            "C:/Users/Ieva/rprojects/outputs_all/bo_roc_full_np_20250811.png")
+            "C:/Users/Ieva/rprojects/outputs_all/bo_roc_full_np_20250916.png")
 
 #t test 2 groups #########################################
 #melt table for expression
@@ -553,7 +552,7 @@ stat.test_OC <- OC_table %>%
   summarise(
     p_value = t.test(value ~ tumor, var.equal = TRUE)$p.value
   ) %>%
-  mutate(p_adj = p.adjust(p_value, method = "BH")) 
+  mutate(p_adj = p.adjust(p_value, method = "BH")) #hes* and jag
 stat.test_OC
 
 #MANN-WHITNEY - Wilcoxon test (not normal)
@@ -569,7 +568,7 @@ wilcox.test_OC #notch and ctnnb1
 #Tribble 2 groups#####################
 each.vs.ref_sig2 <-  tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-  "Gerybiniai",   "KV", 0.048, -2, "HES1", #stjudent's
+  "Gerybiniai",   "KV", 0.0435, -2, "HES1", #stjudent's
 )
 
 #boxplot 2 groups ########################################
@@ -612,9 +611,8 @@ OC_plot2 <- ggplot(OC_table2, aes(x=tumor , y=value, fill = variable)) +
 
 OC_plot2
 
-
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/np_oc_boxplot20250811.png",
+png("C:/Users/Ieva/rprojects/outputs_all/np_oc_boxplot20250916.png",
     width = 1000, height = 1100, res = 200)
 OC_plot2
 dev.off()
@@ -639,7 +637,7 @@ var_results_stage13<- KN_data_full[, c(10,32:35)] %>%
                        value[Stage4  == unique(Stage4 )[2]])$p.value,
     .groups = "drop"
   ) 
-var_results_stage13 
+var_results_stage13 #all good
 
 #var test, stage I vs IV
 var_results_stage14<- KN_data_full[, c(10,32:35)] %>%
@@ -651,7 +649,7 @@ var_results_stage14<- KN_data_full[, c(10,32:35)] %>%
                        value[Stage4  == unique(Stage4 )[2]])$p.value,
     .groups = "drop"
   ) 
-var_results_stage14 
+var_results_stage14 #all good
 
 #var test, stage III vs IV
 var_results_stage34<- KN_data_full[, c(10,32:35)] %>%
@@ -680,7 +678,7 @@ t.test_stage <- Stage_table %>%
   )%>%
   mutate(across(c(p.adj), ~ format(., scientific = FALSE))) %>% # Format p-values to remove scientific notation
   filter(p.adj < 0.1)
-t.test_stage #not applicable to non normal sample groups
+t.test_stage #not applicable to non normal sample groups (CTNNB1 stage1)
 
 #Wilcoxon test (not normal)
 wilcox.test_stage <- Stage_table %>%
@@ -724,7 +722,7 @@ STAGE_plot <- ggplot(Stage_table2, aes(x=Stage4 , y=value, fill = variable)) +
 STAGE_plot
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/stage_plot_np20250813.png",
+png("C:/Users/Ieva/rprojects/outputs_all/stage_plot_np20250916.png",
     width = 1000, height = 1100, res = 200)
 STAGE_plot
 dev.off()
@@ -801,7 +799,7 @@ STAGE_plot_h <- ggplot(Stage_table3, aes(x=Stage4 , y=value, fill = variable)) +
 STAGE_plot_h
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/hgsoc_stage_plot_np20250813.png",
+png("C:/Users/Ieva/rprojects/outputs_all/hgsoc_stage_plot_np20250916.png",
     width = 1000, height = 1100, res = 200)
 STAGE_plot_h
 dev.off()
@@ -845,7 +843,7 @@ t.test_grade
 #Tribble 2 groups for grade
 each.vs.ref_sig2_g <-  tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-  "G1",   "G3", 0.075, -2, "NOTCH2", #stjudent's
+  "G1",   "G3", 0.089, -2, "NOTCH2", #stjudent's
 )
 
 #GRADE boxplot ######################################
@@ -881,7 +879,7 @@ GRADE_plot <- ggplot(Grade_table2, aes(x=Grade2 , y=value, fill = variable)) +
 GRADE_plot
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/grade_plot_np20250813.png",
+png("C:/Users/Ieva/rprojects/outputs_all/grade_plot_np20250916.png",
     width = 1000, height = 1100, res = 200)
 GRADE_plot
 dev.off()
@@ -909,7 +907,7 @@ age_plot
 
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/age_plot_np20250813.png",
+png("C:/Users/Ieva/rprojects/outputs_all/age_plot_np20250916.png",
     width = 1000, height = 1100, res = 200)
 age_plot
 dev.off()
@@ -934,14 +932,14 @@ coords <- coords(roc_curve,
                        "specificity", "precision", "npv",
                        "tpr", "fpr"), transpose = FALSE)
 coords
-coords1.4
+
 
 #roc MODEL figure BH#############################################
 roc_plot <- function() {
   par(pty = "s") #sets square
   plot.roc(roc_results_np[["NOTCH2_DELTA"]], print.auc = F, col = "#dcbeff",
            cex.main=0.8, 
-           main ="Gerybinių patologijų atskyrimas nuo HGSOC",
+           main ="Gerybinių pokyčių atskyrimas nuo HGSOC",
            xlab = "Specifiškumas", 
            ylab = "Jautrumas") #title
   lines(roc_results_np[["CTNNB1_DELTA"]], col = "#911eb4", lwd =2) 
@@ -964,7 +962,7 @@ roc_plot <- function() {
 roc_plot()
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/bh_model_roc_np20250814.png",
+png("C:/Users/Ieva/rprojects/outputs_all/bh_model_roc_np20250916.png",
     width = 1000, height = 1000, res = 200)
 roc_plot()
 dev.off()
@@ -983,6 +981,8 @@ results_np <- data.frame(
   coords_all,
   stringsAsFactors = FALSE
 )
+
+
 #lithuanize it 
 colnames(results_np) <- c("Biožymuo", "plotas po kreive", "slenkstinė vertė", 
                           "tikslumas", "jautrumas", "specifiškumas", 
@@ -994,7 +994,7 @@ gt_table_np <- results_np %>%
   gt() %>%
   tab_header(
     title = "ROC kriterijai", 
-    subtitle = "Gerybinių patologijų atskyrimas nuo HGSOC") %>%
+    subtitle = "Gerybinių pokyčių atskyrimas nuo HGSOC") %>%
   fmt_number(
     columns = everything(),
     decimals = 3
@@ -1008,12 +1008,12 @@ gt_table_np
 
 
 #save table
-gtsave(gt_table_tumor,
-       filename = "C:/Users/Ieva/rprojects/outputs_all/bh_roccombined_table_np_20250814.png")
+gtsave(gt_table_np,
+       filename = "C:/Users/Ieva/rprojects/outputs_all/bh_roccombined_table_np_20250916.png")
 
 #Combine the images
-roc_image1<- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_model_roc_np20250814.png")
-table_image1 <- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_roccombined_table_np_20250814.png")
+roc_image1<- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_model_roc_np20250916.png")
+table_image1 <- image_read("C:/Users/Ieva/rprojects/outputs_all/bh_roccombined_table_np_20250916.png")
 
 combined_image1 <- image_append(c(roc_image1, table_image1), stack = F)
 
@@ -1031,5 +1031,5 @@ combined_image1 <- image_append(c(roc_image1_padded, table_image1_padded), stack
 
 # Save the combined image
 image_write(combined_image1, 
-            "C:/Users/Ieva/rprojects/outputs_all/bh_roc_model_full_np_20250814.png")
+            "C:/Users/Ieva/rprojects/outputs_all/bh_roc_model_full_np_20250916.png")
 

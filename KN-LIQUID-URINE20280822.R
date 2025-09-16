@@ -1,4 +1,4 @@
-#KN-liquid - urine
+#KN-liquid - urine 250916
 Sys.setenv(LANG = "en")
 #libraries
 library(tidyverse)
@@ -18,67 +18,49 @@ library(webshot)
 library(magick)
 
 #add urine data ###################################
-urine_liquid <- readxl::read_xlsx("C:/Users/Ieva/rprojects/OTHER DATA/KN-liquid-splapimas20250822.xlsx")
-#fix patient names
-urine_liquid$patient_id_aud <- gsub("-S", "", urine_liquid$`KN nr.`)
-#rename urine columns
-urine_liquid <- urine_liquid %>%
-  rename("NOTCH2_URINE" = "NOTCH2_DELTA", 
-         "CTNNB1_URINE" = "CTNNB1_DELTA",
-         "DLL1_URINE" = "DLL1_DELTA",
-         "HES1_URINE" = "HES1_DELTA")
-urine_np <- c("NOTCH2_URINE",      "CTNNB1_URINE" ,     "DLL1_URINE" ,       "HES1_URINE")
+KN_data_full <- readRDS( "C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/KN_FULL_LIQUID_R250916.RDS")
+urine_liquid <- KN_data_full[51:65, c(1:19, 38:41)] #leave only URINE DATA
+urine_np <- c("NOTCH2_URINE", "CTNNB1_URINE" , "DLL1_URINE" ,  "HES1_URINE") #names
 
 #SHAPIRO TEST##########################################
-#2 GROUPS
-shapiro_results1 <- urine_liquid[, c(14,30, 31, 33)] %>%
-  pivot_longer(cols = -TIPAS, names_to = "gene", values_to = "value") %>%
-  group_by(TIPAS, gene) %>%
-  summarise(p_value = shapiro.test(value)$p.value, .groups = "drop") %>%
-  filter(p_value < 0.05)
-shapiro_results1 #not normal for other ctnnb1
+#2 GROUPS # except DLL1, too litle data
+shapiro_results1 <- urine_liquid[, c(5, 20, 21, 23)] %>%
+  pivot_longer(cols = -Grupė_Ieva , names_to = "gene", values_to = "value") %>%
+  group_by(Grupė_Ieva , gene) %>%
+  summarise(p_value = shapiro.test(value)$p.value, .groups = "drop") 
+shapiro_results1 #normal
 #VARTEST#####################################################
-var_results_2 <- urine_liquid[, c(14,30, 31,33)] %>%
-  pivot_longer(cols = -TIPAS , names_to = "variable", values_to = "value") %>%
+var_results_2 <- urine_liquid[,  c(5, 20, 21, 23)] %>%
+  pivot_longer(cols = -Grupė_Ieva , names_to = "variable", values_to = "value") %>%
   group_by(variable) %>%
   summarise(
-    p_value = var.test(value[TIPAS  == unique(TIPAS )[1]], 
-                       value[TIPAS  == unique(TIPAS )[2]])$p.value,
+    p_value = var.test(value[Grupė_Ieva  == unique(Grupė_Ieva )[1]], 
+                       value[Grupė_Ieva  == unique(Grupė_Ieva )[2]])$p.value,
     .groups = "drop"
   ) 
-var_results_2 
+var_results_2 #all equal
 
 #PAIRWISE STJUDENTS T TEST ###################################
 #melt table for expression
-Group2_table <- melt(urine_liquid[, c(14,30:33)], id.vars="TIPAS",  measure.vars=urine_np)
+Group2_table <- melt(urine_liquid[, c(5, 20, 21, 22, 23)], id.vars="Grupė_Ieva",  measure.vars=urine_np)
 
 #stjundents test (normal, equal variances)
 t.test_2groups <- Group2_table %>%
   group_by(variable) %>%
-  t_test(value ~ TIPAS,
+  t_test(value ~ Grupė_Ieva,
          p.adjust.method = "BH", 
          var.equal = TRUE, #stjudents
          paired = FALSE, 
          #detailed=TRUE 
   )
-
-#Wilcoxon test (not normal)
-wilcox.test_2groups <- Group2_table %>%
-  group_by(variable) %>%
-  pairwise_wilcox_test(value ~ TIPAS,
-                       #ref.group = "Benign" , #only if one group is needed
-                       p.adjust.method = "BH") 
-wilcox.test_2groups #applicable to other ctnnb1
-
-
+t.test_2groups
 #BOXPLOT##################################
 #rename to lt 
-
 custom_colors <- c("HGSOC" = "deeppink","Other" = "lightpink") 
-OC_plot <- ggplot(Group2_table, aes(x=TIPAS , y=value, fill = variable)) +
-  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = TIPAS )) +
-  geom_jitter(aes(color = TIPAS ), size=1, alpha=0.5) +
-  ylab(label = expression("Santykinė genų raiška, normalizuota pagal  " * italic("GAPDH"))) + 
+OC_plot <- ggplot(Group2_table, aes(x=Grupė_Ieva , y=value, fill = variable)) +
+  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = Grupė_Ieva )) +
+  geom_jitter(aes(color = Grupė_Ieva ), size=1, alpha=0.5) +
+  ylab(label = expression("Santykinė genų raiška šlapime, normalizuota pagal  " * italic("GAPDH"))) + 
   facet_wrap(.~ variable, nrow = 2, scales = "free") +
   #add_pvalue(each.vs.ref_sig, label = "p.adj") + #pvalue
   theme_minimal()+
@@ -98,33 +80,20 @@ OC_plot <- ggplot(Group2_table, aes(x=TIPAS , y=value, fill = variable)) +
 OC_plot
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/URINE_boxplot20250822.png",
+png("C:/Users/Ieva/rprojects/outputs_all/URINE_boxplot20250916.png",
     width = 1000, height = 1100, res = 200)
 OC_plot
 dev.off()
 
 #CLINICAL FEATURES###########################################
-#add np file that has clinical features
-KN_data_full <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_data_np_tissue_full20250813.RDS")
-colnames(KN_data_full) 
-#make small urine df
-urine_small <- urine_liquid[, colnames(urine_liquid) %in%
-                                  c(urine_np, "patient_id_aud")]
-rownames(urine_small) <- urine_small$patient_id_aud
-#merge with main df
-KN_liquid_np_p_urine <- merge(urine_small, KN_data_full, by = "patient_id_aud", all.x = TRUE, all.y = TRUE)
-#chek merge
-colnames(KN_liquid_np_p_urine)
-dim(KN_liquid_np_p_urine)
-
 #chek clinical features
-table(KN_liquid_np_p_urine$Grade2, KN_liquid_np_p_urine$NOTCH2_URINE) #only 1 G1
-table(KN_liquid_np_p_urine$Stage2, KN_liquid_np_p_urine$NOTCH2_URINE) #only 2 STAGE 1&2
-table(KN_liquid_np_p_urine$CA125_f, KN_liquid_np_p_urine$NOTCH2_URINE) #all >35
+table(urine_liquid$Grade2, urine_liquid$NOTCH2_URINE) #only 1 G1
+table(urine_liquid$Stage2, urine_liquid$NOTCH2_URINE) #only 2 STAGE 1&2
+table(urine_liquid$CA125_f, urine_liquid$NOTCH2_URINE) #all >35
 #not enough cases to compare further
 
 #CORRELATION WITH AGE#########################
-age_table <- KN_liquid_np_p_urine[, colnames(KN_liquid_np_p_urine) %in% c(urine_np, "Amžius")]
+age_table <- urine_liquid[, colnames(urine_liquid) %in% c(urine_np, "Amžius")]
 #normalcy
 sapply(age_table, function(x) shapiro.test(x)$p.value) #cttnb1 not normal
 #pearson corrwlation for all
@@ -170,7 +139,7 @@ age_plot_p <- age_plot +
   )
 age_plot_p
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/age_plot_urine20250825.png",
+png("C:/Users/Ieva/rprojects/outputs_all/age_plot_urine20250916.png",
     width = 1000, height = 1100, res = 200)
 age_plot_p
 dev.off()
