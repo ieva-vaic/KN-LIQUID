@@ -344,7 +344,7 @@ for (gene in raiska_np_f) {
 }
 
 # Combine plots
-combined_plot3 <- wrap_plots(plots2, ncol = 4)+
+combined_plot3 <- wrap_plots(plots3, ncol = 4)+
   plot_annotation(
     title = "Survival analysis of HGSOC cases, Uterine lavage",
     theme = theme(
