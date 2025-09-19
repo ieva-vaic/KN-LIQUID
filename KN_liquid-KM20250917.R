@@ -50,6 +50,10 @@ ALL_SURV_LIQUID <- ALL_SURV_LIQUID %>%
            ~ factor(if_else(. > median(., na.rm = TRUE), "High", "Low")),
            .names = "{.col}_f")
   )
+#fix factors
+ALL_SURV_LIQUID$Stage2 <- factor(ALL_SURV_LIQUID$Stage2)
+ALL_SURV_LIQUID$Grade2 <- factor(ALL_SURV_LIQUID$Grade2)
+ALL_SURV_LIQUID$CA125_f <- factor(ALL_SURV_LIQUID$CA125_f)
 #make only HGSOC SURV DF
 HGSOC_SURV_LIQUID <- ALL_SURV_LIQUID %>%
   filter(Grupė_Ieva == "HGSOC") #41 left#
@@ -557,3 +561,68 @@ combined_plasma <- (plots_plasma[[1]] | plots_plasma[[2]]) / (plots_plasma[[3]] 
 
 # Save
 ggsave("KM_plasma_combined.png", combined_plasma, width = 10, height = 8, dpi = 300)
+
+#FOREST PLOT NP, with clinicals
+
+sum(is.na(OC_SURV_LIQUID$Stage4)) #0
+sum(is.na(OC_SURV_LIQUID$Grade2)) #8
+sum(is.na(OC_SURV_LIQUID$CA125)) #7
+sum(is.na(OC_SURV_LIQUID$Amžius)) #0
+
+# Example with 4 biomarkers
+# Fit Cox model (you already have this)
+cox_model_clinical_NOTCH2 <- coxph(
+  Surv(OS, STATUS) ~ NOTCH2_NP + CTNNB1_NP + DLL1_NP + HES1_NP + Stage2 + Grade2 + CA125 + Amžius,
+  data = OC_SURV_LIQUID
+)
+
+# Simple forest plot
+# Extract Cox model results
+cox_df <- broom::tidy(cox_model_clinical_NOTCH2) %>%
+  mutate(
+    HR = exp(estimate),
+    lower = exp(estimate - 1.96 * std.error),
+    upper = exp(estimate + 1.96 * std.error),
+    term = gsub("_", " ", term)  # optional: clean variable names
+  )
+
+# Order variables for plotting (optional)
+cox_df <- cox_df %>%
+  arrange(HR) %>%
+  mutate(term = factor(term, levels = term))  # keep order in plot
+
+# Custom forest plot
+forst_oc_np_xx <- ggplot(cox_df, aes(x = HR, y = term)) +
+  geom_point(size = 3, color = "blue") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper), height = 0.2, color = "blue") +
+  geom_vline(xintercept = 1, linetype = "dashed") +
+  scale_x_log10() +  # HR on log scale
+  labs(
+    x = "Hazard Ratio (log scale)",
+    y = "",
+    title = "Cox model hazard ratios for OC"
+  ) +
+  theme_bw() +
+  theme(
+    axis.text.y = element_text(face = "italic")
+  )
+forst_oc_np_xx
+ggsave("forestplot_np_oc_random.png", plot = forst_oc_np_xx, width = 7, height = 5, dpi = 300)
+
+
+## NOTCH2 Cox model CUMULATIVE HAZARDS PLOT#################################
+cox <- coxph(Surv(OS, STATUS) ~ NOTCH2_NP, data = ALL_SURV_LIQUID)
+
+# Fit survfit using the same data
+fit <- survfit(cox, data = ALL_SURV_LIQUID)
+
+# Cumulative hazard plot
+ggsurvplot(
+  fit,
+  data = ALL_SURV_LIQUID,
+  fun = "cumhaz",        # cumulative hazard
+  color = "#2E9FDF",
+  ggtheme = theme_minimal(),
+  risk.table = TRUE,     # optional: show risk table
+  title = "Cumulative hazard for NOTCH2_NP"
+)

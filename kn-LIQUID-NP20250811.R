@@ -17,6 +17,8 @@ library(png)
 library(htmlwidgets)
 library(webshot)
 library(magick)
+library(multcomp)
+library(ggpubr)
 #open liquid np data
 np_liquid <- readxl::read_xlsx("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/kn_liquid_np_20250916.xlsx")
 #seprate names of the genes
@@ -25,12 +27,12 @@ raiska_np <- colnames(np_liquid[19:22])
 np_liquid$patient_id_aud <- gsub("-np", "", np_liquid$`KN nr.`)
 #remove unnecessary columns
 np_liquid <- np_liquid[, c("patient_id_aud", raiska_np)]
-
 #data - all tumor and clinical
 KN_data <- readRDS("C:/Users/Ieva/rprojects/KV-AUDINIAI/FINAL_sutikrinnimas_KN_AUDINIAI_MET_EXPR/KN_data1114_essential.rds")
 #biomarker groups
 #expression
 raiska <- colnames(KN_data[18:27])
+raiska_tissue <- c("NOTCH2", "CTNNB1", "DLL1" , "HES1" )
 #methylation
 metilinimas <- colnames(KN_data[28:31])
 biomarkers <- c(raiska, metilinimas)
@@ -48,6 +50,8 @@ rownames(KN_data) <- KN_data$patient_id_aud
 np_liquid$patient_id_aud %in% KN_data$patient_id_aud 
 #add
 KN_data_full <- left_join(KN_data, np_liquid, by = "patient_id_aud")
+#fix factors
+KN_data_full$Stage4 <- factor(KN_data_full$Stage4)
 #saveRDS(KN_data_full, "C:/Users/Ieva/rprojects/OTHER DATA/KN_data_np_tissue_full20250916.RDS")
 #make groupings of diseases#################
 OC_HGSOC_BENIGN<- KN_data_full[c(KN_data_full$Grupė_Ieva != "Other"),] #51 cases left
@@ -75,6 +79,8 @@ shapiro_results2 <- KN_data_full[, c(3,32:35)] %>%
   summarise(p_value = shapiro.test(value)$p.value, .groups = "drop") %>%
   filter(p_value < 0.05)
 shapiro_results2 #not notmal for OC benign dll1 and other ctnnb1
+
+leveneTest(variable ~ group)
 
 #var test, benign OC
 var_results_oc_b <- KN_data_full[, c(15,32:35)] %>%
@@ -126,43 +132,68 @@ var_results_other_other<- KN_data_full[, c(3,32:35)] %>%
 #%>%filter(p_value < 0.05)
 var_results_other_other #all equal dist. 
 
+#levene test instead, 3 groups
+levene_rez1 <- KN_data_full[, c(3,32:35)] %>%
+  pivot_longer(cols = -Grupė_Ieva , names_to = "variable", values_to = "value") %>%
+  group_by(variable) %>%
+  summarise(
+    p_value = car::leveneTest(value ~ Grupė_Ieva )$`Pr(>F)`[1],
+    .groups = "drop"
+  )
+
+levene_rez1
+
 #NORMAL DISTRIBUTION AND VARIANCE: STUJENT T.TEST
 #NOT NORMAL DISTRIBUTION AND VARIANCE:  Welch’s t-test (if near normal) OR Mann-Whitney U test
 #welch test is safer as it adjusts for unequal sample sizes
 
-#MELT for comarisons
-#melt table for expression
-Group3_table <- melt(KN_data_full[, c(3,32:35)], id.vars="Grupė_Ieva",  measure.vars=raiska_np)
+#ANOVA####################################################
+#DLL and ctnnb1 has to use Kruskal-Wallis test
+#all equal vairances, othervise would use welch anova
+#NOTCH2
+res_aov <- aov( NOTCH2_DELTA ~ Grupė_Ieva ,
+                data = KN_data_full
+)
+shapiro.test(res_aov$residuals) #normality is met
+summary(res_aov)
+#JAG2
+res_aov2 <- aov( HES1_DELTA ~ Grupė_Ieva ,
+                 data = KN_data_full
+)
+summary(res_aov2) # p 0.37
+shapiro.test(res_aov2$residuals) #normality is met
+# Tukey HSD test:
+post_test <- glht(res_aov2,
+                  linfct = mcp(Grupė_Ieva  = "Tukey")
+)
 
-#PAIRWISE STJUDENTS T TEST ###################################
-#stjundents test (normal, equal variances)
-t.test_3groups <- Group3_table %>%
-  group_by(variable) %>%
-  t_test(value ~ Grupė_Ieva,
-         p.adjust.method = "BH", 
-         var.equal = TRUE, #stjudents
-         paired = FALSE, 
-         #detailed=TRUE 
-  )%>%
-  mutate(across(c(p.adj), ~ format(., scientific = FALSE)))  # Format p-values to remove scientific notation
-t.test_3groups #not applicable to non normal sample groups (OC benign dll1 and other ctnnb1)
+summary(post_test) #hgsoc benign 0,0277
 
-#Wilcoxon test (not normal)
-wilcox.test_3groups <- Group3_table %>%
-  group_by(variable) %>%
-  pairwise_wilcox_test(value ~ Grupė_Ieva,
-                       #ref.group = "Benign" , #only if one group is needed
-                       p.adjust.method = "BH") 
-wilcox.test_3groups #applicable to benign dll1 and other ctnnb1
+#not normal DLL1
+kruskal1 <- kruskal.test(DLL1_DELTA ~ Grupė_Ieva,
+                         data = KN_data_full
+)
+kruskal1
+
+#not normal CTNNB1
+kruskal2 <- kruskal.test(CTNNB1_DELTA ~ Grupė_Ieva,
+                         data = KN_data_full
+)
+kruskal2 
 
 #Tribble all tests together 3 groups#####################
 each.vs.ref_sig <- 
   each.vs.ref_sig2 <- tibble::tribble(
     ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-    "Gerybiniai",   "HGSOC", 0.024, -2, "HES1", #stjudent's
+    "Gerybiniai",   "HGSOC", 0.028, -2, "HES1", #stjudent's
   )
 
 #boxplot 3 groups ########################################
+
+#MELT for comarisons
+#melt table for expression
+Group3_table <- melt(KN_data_full[, c(3,32:35)], id.vars="Grupė_Ieva",  measure.vars=raiska_np)
+
 #rename to lt 
 Group3_table$Grupė_Ieva
 Group3_table2 <- Group3_table %>%
@@ -203,7 +234,7 @@ OC_plot <- ggplot(Group3_table2, aes(x=Grupė_Ieva , y=value, fill = variable)) 
 OC_plot
 
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/np_boxplot20250916.png",
+png("C:/Users/Ieva/rprojects/outputs_all/np_boxplot20250918.png",
     width = 1000, height = 1100, res = 200)
 OC_plot
 dev.off()
@@ -627,69 +658,59 @@ shapiro_results1 <- KN_data_full[, c(10,32:35)] %>%
   summarise(p_value = shapiro.test(value)$p.value, .groups = "drop") 
 shapiro_results1 #STAGE I, ctnnb1 is not  normal
 
-#var test, stage I vs III
-var_results_stage13<- KN_data_full[, c(10,32:35)] %>%
-  filter(Stage4  %in% c("I", "III"))%>%
+#levene test instead, 3 groups
+levene_rez2 <- KN_data_full[, c(10,32:35)] %>%
   pivot_longer(cols = -Stage4 , names_to = "variable", values_to = "value") %>%
   group_by(variable) %>%
   summarise(
-    p_value = var.test(value[Stage4  == unique(Stage4 )[1]], 
-                       value[Stage4  == unique(Stage4 )[2]])$p.value,
+    p_value = car::leveneTest(value ~ Stage4 )$`Pr(>F)`[1],
     .groups = "drop"
-  ) 
-var_results_stage13 #all good
+  )
 
-#var test, stage I vs IV
-var_results_stage14<- KN_data_full[, c(10,32:35)] %>%
-  filter(Stage4  %in% c("I", "IV"))%>%
-  pivot_longer(cols = -Stage4 , names_to = "variable", values_to = "value") %>%
-  group_by(variable) %>%
-  summarise(
-    p_value = var.test(value[Stage4  == unique(Stage4 )[1]], 
-                       value[Stage4  == unique(Stage4 )[2]])$p.value,
-    .groups = "drop"
-  ) 
-var_results_stage14 #all good
+levene_rez2 #all equal
 
-#var test, stage III vs IV
-var_results_stage34<- KN_data_full[, c(10,32:35)] %>%
-  filter(Stage4  %in% c("III", "IV"))%>%
-  pivot_longer(cols = -Stage4 , names_to = "variable", values_to = "value") %>%
-  group_by(variable) %>%
-  summarise(
-    p_value = var.test(value[Stage4  == unique(Stage4 )[1]], 
-                       value[Stage4  == unique(Stage4 )[2]])$p.value,
-    .groups = "drop"
-  ) 
-var_results_stage34  # all same variances
+#ANOVA stage####################################################
+#DLL and ctnnb1 has to use Kruskal-Wallis test
+#all equal vairances, othervise would use welch anova
+#NOTCH2
+res_aov_Stage <- aov( NOTCH2_DELTA ~ Stage4 ,
+                      data = KN_data_full
+)
+shapiro.test(res_aov_Stage$residuals) #normality is met
+summary(res_aov_Stage)
+#HES1
+res_aov2_stage <- aov( HES1_DELTA ~ Stage4 ,
+                       data = KN_data_full
+)
+summary(res_aov2_stage) # p 0.0452 
+shapiro.test(res_aov2_stage$residuals) #normality is met
+# Tukey HSD test:
+post_test_stage <- glht(res_aov2_stage, linfct = mcp(Stage4 = "Tukey"))
 
+summary(post_test_stage) #hgsoc benign 0,0277
+
+#not normal DLL1
+kruskal1_stage <- kruskal.test(DLL1_DELTA ~ Stage4,
+                               data = KN_data_full
+)
+kruskal1
+
+#not normal CTNNB1
+kruskal2_stage <- kruskal.test(CTNNB1_DELTA ~ Stage4,
+                               data = KN_data_full
+)
+kruskal2_stage 
+
+#Tribble stage groups#####################
+each.vs.ref_sig2_stage <-  tibble::tribble(
+  ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
+  "I",   "IV", 0.0452, -2, "HES1", #stjudent's
+)
+
+#STAGE boxplot ######################################
 #melt table for expression
 Stage_table <- melt(KN_data_full[, c(10,32:35)], id.vars="Stage4",  measure.vars=raiska_np)
 
-#STAGE PAIRWISE STJUDENTS T TEST ###################################
-#stjundents test (normal, equal variances)
-t.test_stage <- Stage_table %>%
-  group_by(variable) %>%
-  t_test(value ~ Stage4,
-         p.adjust.method = "BH", 
-         var.equal = TRUE, #stjudents
-         paired = FALSE, 
-         #detailed=TRUE 
-  )%>%
-  mutate(across(c(p.adj), ~ format(., scientific = FALSE))) %>% # Format p-values to remove scientific notation
-  filter(p.adj < 0.1)
-t.test_stage #not applicable to non normal sample groups (CTNNB1 stage1)
-
-#Wilcoxon test (not normal)
-wilcox.test_stage <- Stage_table %>%
-  group_by(variable) %>%
-  filter(variable == "CTNNB1_DELTA")%>%
-  pairwise_wilcox_test(value ~ Stage4,
-                       #ref.group = "Benign" , #only if one group is needed
-                       p.adjust.method = "BH") 
-wilcox.test_stage #applicable Stage 1 ctnnb1
-
-#STAGE boxplot ######################################
 Stage_table2 <- Stage_table %>%
   mutate(variable  = case_when(
     variable       == "NOTCH2_DELTA" ~ "NOTCH2",
@@ -704,7 +725,7 @@ STAGE_plot <- ggplot(Stage_table2, aes(x=Stage4 , y=value, fill = variable)) +
   geom_jitter(aes(color = Stage4 ), size=1, alpha=0.5) +
   ylab(label = expression("Santykinė genų raiška, normalizuota pagal  " * italic("GAPDH"))) + 
   facet_wrap(.~ variable, nrow = 2, scales = "free") +
-  #add_pvalue(each.vs.ref_sig, label = "p.adj") + #pvalue
+  add_pvalue(each.vs.ref_sig2_stage, label = "p.adj") + #pvalue
   theme_minimal()+
   theme(
     strip.text.x = element_text(
@@ -721,8 +742,49 @@ STAGE_plot <- ggplot(Stage_table2, aes(x=Stage4 , y=value, fill = variable)) +
 
 STAGE_plot
 
+
+
+#Tribble stage groups#####################
+each.vs.ref_sig2_stage <-  tibble::tribble(
+  ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
+  "I",   "IV", 0.0452, -2, "HES1", #stjudent's
+)
+
+#STAGE boxplot ######################################
+Stage_table2 <- Stage_table %>%
+  mutate(variable  = case_when(
+    variable       == "NOTCH2_DELTA" ~ "NOTCH2",
+    variable       == "CTNNB1_DELTA" ~ "CTNNB1",
+    variable       == "DLL1_DELTA" ~ "DLL1",
+    variable       == "HES1_DELTA" ~ "HES1"
+  )) %>%
+  filter(!is.na(Stage4))
+custom_colors_stage <- c("IV" = "deeppink","III" = "lightpink","II" = "lightblue", "I" = "blue") 
+STAGE_plot <- ggplot(Stage_table2, aes(x=Stage4 , y=value, fill = variable)) +
+  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = Stage4 )) +
+  geom_jitter(aes(color = Stage4 ), size=1, alpha=0.5) +
+  ylab(label = expression("Santykinė genų raiška, normalizuota pagal  " * italic("GAPDH"))) + 
+  facet_wrap(.~ variable, nrow = 2, scales = "free") +
+  add_pvalue(each.vs.ref_sig2_stage, label = "p.adj") + #pvalue
+  theme_minimal()+
+  theme(
+    strip.text.x = element_text(
+      size = 12, face = "bold.italic"
+    ),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5))+
+  labs(x=NULL)+
+  stat_boxplot(geom ='errorbar')+
+  scale_fill_manual(values = custom_colors_stage) +
+  scale_color_manual(values = custom_colors_stage) +
+  scale_y_continuous(labels = function(x) 
+    gsub("-", "\u2212", as.character(x))) #add long "-" signs
+
+STAGE_plot
+
+
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/stage_plot_np20250916.png",
+png("C:/Users/Ieva/rprojects/outputs_all/stage_plot_np20250919.png",
     width = 1000, height = 1100, res = 200)
 STAGE_plot
 dev.off()
@@ -738,34 +800,32 @@ shapiro_results1 <- HGSOC[, c(10,32:35)] %>%
   group_by(Stage4, gene) %>%
   summarise(p_value = shapiro.test(value)$p.value, .groups = "drop") 
 shapiro_results1 #all normal
-#var test, stage III vs IV
-var_results_stage34h<- HGSOC[, c(10,32:35)] %>%
-  filter(Stage4  %in% c("III", "IV"))%>%
+
+#levene test instead, 3 groups
+levene_rez3 <- HGSOC[, c(10,32:35)] %>%
   pivot_longer(cols = -Stage4 , names_to = "variable", values_to = "value") %>%
   group_by(variable) %>%
   summarise(
-    p_value = var.test(value[Stage4  == unique(Stage4 )[1]], 
-                       value[Stage4  == unique(Stage4 )[2]])$p.value,
+    p_value = car::leveneTest(value ~ Stage4 )$`Pr(>F)`[1],
     .groups = "drop"
-  ) 
-var_results_stage34h  # all same variances, cant test with stage I or II due to low sample size
+  )
+
+levene_rez3 #all equal
 
 #melt table for expression
 Stage_table_HGSOC <- melt(HGSOC[, c(10,32:35)], id.vars="Stage4",  measure.vars=raiska_np)
 
-#HGSOC, STAGE PAIRWISE STJUDENTS T TEST ###################################
-#stjundents test (normal, equal variances)
-t.test_stage_h <- Stage_table_HGSOC %>%
-  group_by(variable) %>%
-  t_test(value ~ Stage4,
-         p.adjust.method = "BH", 
-         var.equal = TRUE, #stjudents
-         paired = FALSE, 
-         #detailed=TRUE 
-  )%>%
-  mutate(across(c(p.adj), ~ format(., scientific = FALSE))) %>% # Format p-values to remove scientific notation
-  filter(p.adj < 0.1)
-t.test_stage_h #not applicable to non normal sample groups
+#STAGE ANOVA, HGSOC ##########################
+res_df_anova <- lapply(raiska_np, function(var) {
+  formula <- as.formula(paste(var, "~ Stage4"))
+  fit <- aov(formula, data = HGSOC)
+  data.frame(
+    variable = var,
+    p_value = tidy(fit)[["p.value"]][1]  # ANOVA p-value
+  )
+}) %>% dplyr::bind_rows()
+
+res_df_anova
 
 #HGSOC STAGE boxplot ######################################
 Stage_table3 <- Stage_table_HGSOC %>%
@@ -890,11 +950,27 @@ age_table <- KN_data_full[, colnames(KN_data_full) %in% c(raiska_np, "Amžius")]
 #normalcy
 sapply(age_table, function(x) shapiro.test(x)$p.value) #cttnb1 not normal
 #pearson corrwlation for all
-results_n <- lapply(age_table[, colnames(age_table) %in% raiska_np], 
+results_n <- lapply(age_table[, colnames(age_table) %in% c("NOTCH2_DELTA", "DLL1_DELTA", "HES1_DELTA")], 
                     function(x) cor.test(x, age_table$Amžius, method = "pearson"))
 results_n
 #spearman for ctnnb1
 cor.test(age_table$Amžius,age_table$CTNNB1_DELTA, method = "spearman")
+#add results to the table
+results_df <- bind_rows(lapply(names(results_n), function(var) {
+  broom::tidy(results_n[[var]]) %>%
+    mutate(variable = var)
+}))
+
+# Spearman correlation for CTNNB1
+ctn_res <- broom::tidy(cor.test(age_table$Amžius, age_table$CTNNB1_DELTA, method = "spearman")) %>%
+  mutate(variable = "CTNNB1_DELTA")
+#join
+common_cols <- intersect(names(results_df), names(ctn_res))
+all_corr_results <- bind_rows(
+  results_df %>% select(all_of(common_cols)),
+  ctn_res %>% select(all_of(common_cols))
+)
+all_corr_results
 #plot
 age_table_l <- age_table %>%
   pivot_longer(cols = -Amžius, names_to = "variable", values_to = "value")
@@ -1033,3 +1109,104 @@ combined_image1 <- image_append(c(roc_image1_padded, table_image1_padded), stack
 image_write(combined_image1, 
             "C:/Users/Ieva/rprojects/outputs_all/bh_roc_model_full_np_20250916.png")
 
+#PAIRED TEST THE TISSUE VS NP
+results_list <- lapply(seq_along(raiska_np), function(i) {
+  
+  plasma_col <- raiska_np[i]
+  tissue_col <- raiska_tissue[i]
+  gene_name  <- plasma_col  # or tissue_col, just for labeling
+  
+  # Compute differences
+  diffs <- KN_data_full[[tissue_col]] - KN_data_full[[plasma_col]]
+  
+  # Check normality
+  normal_p <- shapiro.test(diffs)$p.value
+  
+  if(normal_p > 0.05) {
+    # paired t-test
+    test <- t.test(KN_data_full[[tissue_col]], KN_data_full[[plasma_col]], paired = TRUE)
+    data.frame(
+      gene = gene_name,
+      test = "paired t-test",
+      statistic = test$statistic,
+      p_value = test$p.value,
+      mean_diff = test$estimate,
+      normality_p = normal_p
+    )
+  } else {
+    # Wilcoxon signed-rank test
+    test <- wilcox.test(KN_data_full[[tissue_col]], KN_data_full[[plasma_col]], paired = TRUE)
+    data.frame(
+      gene = gene_name,
+      test = "Wilcoxon signed-rank",
+      statistic = test$statistic,
+      p_value = test$p.value,
+      mean_diff = median(diffs),   # report median difference for Wilcoxon
+      normality_p = normal_p
+    )
+  }
+})
+
+# Combine into a single data frame
+results_df <- do.call(rbind, results_list)
+
+# Optional: adjust p-values for multiple testing
+results_df$p_adj <- p.adjust(results_df$p_value, method = "BH")
+
+results_df
+
+#PAIRED PLOTS #####################
+# Make sure plasma and tissue columns are in the same order
+plot_df <- lapply(seq_along(raiska_np), function(i) {
+  plasma_col <- raiska_np[i]
+  tissue_col <- raiska_tissue[i]
+  gene_name  <- plasma_col  # or tissue_col
+  
+  data.frame(
+    patient = 1:nrow(KN_data_full),
+    expression = c(KN_data_full[[tissue_col]], KN_data_full[[plasma_col]]),
+    source = rep(c("Tissue","NP"), each = nrow(KN_data_full)),
+    gene = gene_name
+  )
+}) %>% bind_rows()
+
+
+# Clean gene names: remove "_DELTA"
+plot_df <- plot_df %>%
+  mutate(gene_clean = str_replace(gene, "_DELTA", ""))
+
+p_labels <- results_df %>%
+  dplyr::select(gene, p_adj) %>%
+  dplyr::mutate(
+    gene_clean = str_replace(gene, "_DELTA", ""),
+    label = ifelse(p_adj < 0.001, "p < 0.001", paste0("p = ", signif(p_adj, 3)))
+  )
+
+# Y-position for p-value labels
+y_positions <- plot_df %>%
+  group_by(gene_clean) %>%
+  summarize(y_pos = max(expression, na.rm = TRUE) * 1.05, .groups = "drop")
+
+p_labels <- left_join(p_labels, y_positions, by = "gene_clean")
+
+# Convert gene names to expressions for italics
+# Plot
+paired_plot <- ggplot(plot_df, aes(x = source, y = expression, group = patient)) +
+  geom_point(alpha = 0.6) +
+  geom_line(alpha = 0.5, color = "gray") +
+  facet_wrap(~ gene_clean, scales = "free_y") +
+  geom_text(
+    data = p_labels,
+    aes(x = 1.5, y = y_pos, label = label),
+    inherit.aes = FALSE,
+    size = 3
+  ) +
+  theme_bw() +
+  labs(y = "Expression", x = "", title = "Paired Tissue vs NP Expression")
+
+paired_plot
+# Save the plot as a PNG file
+png("C:/Users/Ieva/rprojects/outputs_all/paired_plot20250928.png",
+    width = 1000, height = 1100, res = 200)
+paired_plot
+dev.off()

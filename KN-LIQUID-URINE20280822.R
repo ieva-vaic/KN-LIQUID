@@ -143,3 +143,26 @@ png("C:/Users/Ieva/rprojects/outputs_all/age_plot_urine20250916.png",
     width = 1000, height = 1100, res = 200)
 age_plot_p
 dev.off()
+
+#URINE AS FACTOR#######################################
+colnames(urine_liquid)
+#code 0 and 1
+urine_liquid2 <-  urine_liquid %>%
+  mutate(across(20:23, ~ ifelse(is.na(.), "nera raiskos", "raiska")))
+urine_liquid2[, 20:23]
+
+fisher.test(table(urine_liquid2$Grupė_Ieva, urine_liquid2$HES1_URINE))# all with expression
+fisher.test(table(urine_liquid2$Grupė_Ieva, urine_liquid2$CTNNB1_URINE)) #1
+fisher.test(table(urine_liquid2$Grupė_Ieva, urine_liquid2$NOTCH2_URINE)) #1
+fisher.test(table(urine_liquid2$Grupė_Ieva, urine_liquid2$DLL1_URINE)) #1
+
+fisher.test(table(urine_liquid2$tumor, urine_liquid2$HES1_URINE))# all with expression
+fisher.test(table(urine_liquid2$tumor, urine_liquid2$CTNNB1_URINE)) #1
+fisher.test(table(urine_liquid2$tumor, urine_liquid2$NOTCH2_URINE)) #1
+fisher.test(table(urine_liquid2$tumor, urine_liquid2$DLL1_URINE)) #1
+
+fisher.test(table(urine_liquid2$Stage2, urine_liquid2$HES1_URINE))# all with expression
+fisher.test(table(urine_liquid2$Stage2, urine_liquid2$CTNNB1_URINE)) #1
+fisher.test(table(urine_liquid2$Stage2, urine_liquid2$NOTCH2_URINE)) #1
+fisher.test(table(urine_liquid2$Stage2, urine_liquid2$DLL1_URINE)) #1
+
