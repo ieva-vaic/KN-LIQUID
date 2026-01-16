@@ -1,4 +1,4 @@
-#KN-  liquid 2026 01 14
+#KN-  liquid 2026 01 14, 16
 #FULL NP data, after additional np cases
 Sys.setenv(LANG = "en")
 library(tidyverse)
@@ -605,6 +605,24 @@ ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1_NP_f, data = OC_SURV_LIQUID),
            data = OC_SURV_LIQUID, pval = TRUE,
            title="Overall survival by HES1 expression in NP, all OC cases")
 
+##median survival NP, KN, TISSUE dataset###########################
+
+hes1_fit <- survfit(Surv(OS, STATUS) ~ HES1_NP_f, data = OC_SURV_LIQUID)
+summary(hes1_fit)$table #gives months
+summary(hes1_fit, times = 12)$surv #gives survival prob at 1 year
+summary(hes1_fit, times = 36)$surv #gives survival prob at 3 yrs
+summary(hes1_fit, times = 60)$surv #gives survival prob at 5 yrs
+#what is median survival overall?
+fit_all <- survfit(Surv(OS, STATUS) ~ 1, data = OC_SURV_LIQUID)
+summary(fit_all)$table #not reached
+ggsurvplot(
+  hes1_fit,
+  data = OC_SURV_LIQUID,
+  pval = TRUE,
+  risk.table = TRUE, 
+  surv.median.line = "hv",   # adds horizontal & vertical median lines
+  title = "Overall survival by HES1 expression in NP, OC TUMOR cohort"
+)
 ##NP, ENDOMETRIAL CANCER ##################################
 ## Fit survival curves ENDOMETRIAL CANCER#################
 ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1_NP_f, data = ENDOMETRIAL_TUMOR_SURV_LIQUID), 
@@ -626,7 +644,7 @@ ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1_NP_f, data = ENDOMETRIAL_TUMOR_SURV_L
 #make ENDOMETRIAL VS BENIGN DF
 ENDO_BENIGN_DF<- LIQUID_DF %>%
   filter(TYPE%in% c("BENIGN", "ENDOMETRIAL CANCER"))%>% #filter for right samples
-  select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
+  dplyr::select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
        )
 ENDO_BENIGN_DF$TYPE <- droplevels(ENDO_BENIGN_DF$TYPE) #drop unused
 ENDO_BENIGN_DF$TYPE  <- relevel(ENDO_BENIGN_DF$TYPE , ref = "BENIGN") #set control
@@ -695,10 +713,11 @@ gt_table_np_endo_ben <- results_np_endo_benign %>%
   )
 #show
 gt_table_np_endo_ben
-#make ENDOMETRIAL VS hgsoc DF########################################
+#ROC ENDOMETRIAL vs HGSOC###################################################
+#make ENDOMETRIAL VS hgsoc DF
 ENDO_hgsoc_DF<- LIQUID_DF %>%
   filter(TYPE%in% c("HGSOC", "ENDOMETRIAL CANCER"))%>% #filter for right samples
-  select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
+  dplyr::select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
   )
 ENDO_hgsoc_DF$TYPE <- droplevels(ENDO_hgsoc_DF$TYPE) #drop unused
 ENDO_hgsoc_DF$TYPE  <- relevel(ENDO_hgsoc_DF$TYPE , ref = "ENDOMETRIAL CANCER") #set control
@@ -771,7 +790,7 @@ gt_table_np_endo_hsgoc
 #make hgsoc VS BENIGN DF
 HGSOC_BENIGN_DF<- LIQUID_DF %>%
   filter(TYPE%in% c("BENIGN", "HGSOC"))%>% #filter for right samples
-  select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
+  dplyr::select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
   )
 HGSOC_BENIGN_DF$TYPE <- droplevels(HGSOC_BENIGN_DF$TYPE) #drop unused
 HGSOC_BENIGN_DF$TYPE  <- relevel(HGSOC_BENIGN_DF$TYPE , ref = "BENIGN") #set control
@@ -840,3 +859,76 @@ gt_table_np_HGSOC_ben <- results_np_HGSOC_benign %>%
   )
 #show
 gt_table_np_HGSOC_ben
+#ROC hgsoc VS others ########################################
+#make hgsoc VS OTHER DF
+HGSOC_OTHER_DF<- LIQUID_DF %>%
+  filter(TYPE%in% c("OTHER", "HGSOC"))%>% #filter for right samples
+  dplyr::select("TYPE", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
+  )
+HGSOC_OTHER_DF$TYPE <- droplevels(HGSOC_OTHER_DF$TYPE) #drop unused
+HGSOC_OTHER_DF$TYPE  <- relevel(HGSOC_OTHER_DF$TYPE , ref = "OTHER") #set control
+roc_results_np_HGOSC_OTHER<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
+  roc(response = HGSOC_OTHER_DF$TYPE, predictor = HGSOC_OTHER_DF[[col]])})
+names(roc_results_np_HGOSC_OTHER) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
+roc_results_np_HGOSC_OTHER
+#extract the aucs
+auc_values_np_HGSOC_OTHER <- sapply(roc_results_np_HGOSC_OTHER, function(roc_obj) {auc(roc_obj)})
+auc_values_np_HGSOC_OTHER #extracted aucs
+#roc figure 
+roc_plot4 <- function() {
+  par(pty = "s") #sets square
+  plot.roc(roc_results_np_HGOSC_OTHER[["NOTCH2_NP"]], print.auc = F, col = "#dcbeff",
+           cex.main=0.8, 
+           main ="Ne HGSOC tipo KV  atskyrimas nuo HGSOC",
+           xlab = "1 - Specifiškumas", 
+           ylab = "Jautrumas", 
+           legacy.axes = T) #title
+  lines(roc_results_np_HGOSC_OTHER[["CTNNB1_NP"]], col = "#911eb4", lwd =2) 
+  lines(roc_results_np_HGOSC_OTHER[["DLL1_NP"]], col ="#ffd8b1", lwd =2) 
+  lines(roc_results_np_HGOSC_OTHER[["HES1_NP"]], col = "#42d4f4", lwd =2) 
+  legend("bottomright", legend = c( expression(italic("NOTCH2")),
+                                    expression(italic("CTNNB1")),
+                                    expression(italic("DLL1")), 
+                                    expression(italic("HES1"))
+  ),
+  
+  col = c("#dcbeff", "#911eb4", "#ffd8b1", "#42d4f4"), lty = 1, 
+  cex = 0.7, lwd =3)
+}
+#plot
+roc_plot4()
+#roc table
+coords_results_np_HGSOC_OTHER<- lapply(roc_results_np_HGOSC_OTHER, function(roc_obj) {
+  coords(roc_obj, "best", ret = c("threshold", "accuracy", "sensitivity",
+                                  "specificity"),
+         transpose = FALSE)
+})
+coords_results_np_HGSOC_OTHER
+#create df
+results_np_HGSOC_OTHER<- data.frame(
+  Predictor = c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"),
+  AUC = auc_values_np_HGSOC_OTHER,
+  do.call(rbind,coords_results_np_HGSOC_OTHER) 
+)
+results_np_HGSOC_OTHER
+#lithuanize it 
+colnames(results_np_HGSOC_OTHER) <- c("Biožymuo", "plotas po kreive", "slenkstinė vertė", 
+                                      "tikslumas", "jautrumas", "specifiškumas")
+rownames(results_np_HGSOC_OTHER) <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_HGSOC_OTHER$Biožymuo <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+#nice formating of the Table metrics for ROC OC
+gt_table_np_HGSOC_OTHER <- results_np_HGSOC_OTHER %>%
+  gt() %>%
+  tab_header(
+    title = "ROC kriterijai", 
+    subtitle = "Ne HGSOC tipo KV atskyrimas nuo HGSOC") %>%
+  fmt_number(
+    columns = everything(),
+    decimals = 3
+  ) %>%
+  tab_style(
+    style = cell_text(style = "italic"),
+    locations = cells_body(columns = vars(Biožymuo))
+  )
+#show
+gt_table_np_HGSOC_OTHER

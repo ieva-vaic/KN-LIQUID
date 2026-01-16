@@ -1,4 +1,4 @@
-#KN-  liquid 2026 01 15
+#KN-  liquid 2026 01 15, 16
 #CASES WITH TUMOR DATA
 Sys.setenv(LANG = "en")
 library(tidyverse)
@@ -575,7 +575,7 @@ cor.test(age_table$Age,age_table$CTNNB1_NP, method = "spearman")
 notch2_long <- TUMOR_df %>%
   dplyr::select(`Laboratorinis kodas`, NOTCH2_NP, NOTCH2_TUMOR)%>%
   pivot_longer(
-    cols = NOTCH2,
+    cols = c(NOTCH2_NP, NOTCH2_TUMOR),
     names_to = "gene",
     values_to = "expression"
   )
@@ -734,6 +734,24 @@ summary(cox_model_DLL1_np)# P = 0.074  .
 cox_model_HES1_np <- coxph(Surv(OS, STATUS) ~ HES1_NP, data = OC_SURV_LIQUID)
 summary(cox_model_HES1_np) #p =  0.0662 .
 
+
+##median survival NP, KN, TISSUE dataset###########################
+hes1_fit <- survfit(Surv(OS, STATUS) ~ HES1_NP_f, data = OC_SURV_LIQUID)
+summary(hes1_fit)$table #gives months
+summary(hes1_fit, times = 12)$surv #gives survival prob at 1 year
+summary(hes1_fit, times = 36)$surv #gives survival prob at 3 yrs
+summary(hes1_fit, times = 60)$surv #gives survival prob at 5 yrs
+#what is median survival overall?
+fit_all <- survfit(Surv(OS, STATUS) ~ 1, data = OC_SURV_LIQUID)
+summary(fit_all)$table #not reached
+ggsurvplot(
+  hes1_fit,
+  data = OC_SURV_LIQUID,
+  pval = TRUE,
+  risk.table = TRUE, 
+  surv.median.line = "hv",   # adds horizontal & vertical median lines
+  title = "Overall survival by HES1 expression in NP, OC TUMOR cohort"
+)
 #SURVIVAL NP, HGSOC, TISSUE GROUP ###################################
 table(HGSOC_SURV_LIQUID$STATUS, useNA = "a") #17 dead
 
@@ -765,6 +783,7 @@ summary(cox_model_DLL1_np2)# P = 0.023
 
 cox_model_HES1_np2 <- coxph(Surv(OS, STATUS) ~ HES1_NP, data = HGSOC_SURV_LIQUID)
 summary(cox_model_HES1_np2) #p =  0.301
+
 
 #TUMOR DATA ####################################################################
 #TISSUE NORMALCY TEST for groups #######################################

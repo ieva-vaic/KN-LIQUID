@@ -10,6 +10,7 @@ library(survival)
 library(survminer) #ggsurvplot
 library(pROC)
 library(gt)
+library(dplyr)
 #read RDS
 LIQUID_DF <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/liquid_20260114.RDS") #NEW WITH UPDATED NP kn-97
 #make 15 case df
@@ -21,7 +22,7 @@ LIQUID_DF_15 <- LIQUID_DF %>%
 #notch2
 NOTCH2 <- c("NOTCH2_URINE", "NOTCH2_NP", "NOTCH2_P_norm","NOTCH2_TUMOR")
 notch2_long <- LIQUID_DF_15  %>%
-  select(c("Laboratorinis kodas", NOTCH2)) %>%
+  dplyr::select(c("Laboratorinis kodas", NOTCH2)) %>%
   pivot_longer(
     cols = NOTCH2,
     names_to = "gene",
@@ -46,7 +47,7 @@ ggplot(notch2_long, aes(x = gene, y = expression, group = `Laboratorinis kodas`)
 #hes1
 hes1 <- c("HES1_URINE", "HES1_NP", "HES1_P_norm","HES1_TUMOR")
 hes1_long <- LIQUID_DF_15  %>%
-  select(c("Laboratorinis kodas", hes1)) %>%
+  dplyr::select(c("Laboratorinis kodas", hes1)) %>%
   pivot_longer(
     cols = hes1,
     names_to = "gene",
@@ -72,7 +73,7 @@ ggplot(hes1_long, aes(x = gene, y = expression, group = `Laboratorinis kodas`)) 
 #CTNNB1
 CTNNB1 <- c("CTNNB1_URINE", "CTNNB1_NP", "CTNNB1_P_norm","CTNNB1_TUMOR")
 CTNNB1_long <- LIQUID_DF_15  %>%
-  select(c("Laboratorinis kodas", CTNNB1)) %>%
+  dplyr::select(c("Laboratorinis kodas", CTNNB1)) %>%
   pivot_longer(
     cols = CTNNB1,
     names_to = "gene",
@@ -98,7 +99,7 @@ ggplot(CTNNB1_long, aes(x = gene, y = expression, group = `Laboratorinis kodas`)
 #dll1
 DLL1 <- c("DLL1_URINE", "DLL1_NP", "DLL1_P_norm","DLL1_TUMOR")
 DLL1_long <- LIQUID_DF_15  %>%
-  select(c("Laboratorinis kodas", DLL1)) %>%
+  dplyr::select(c("Laboratorinis kodas", DLL1)) %>%
   pivot_longer(
     cols = DLL1,
     names_to = "gene",
@@ -449,6 +450,46 @@ ggsurvplot(survfit(Surv(OS, STATUS) ~ DLL1_P, data = ALL_SURV_LIQUID),
 ggsurvplot(survfit(Surv(OS, STATUS) ~ NOCTH2_P, data = ALL_SURV_LIQUID), 
            data = ALL_SURV_LIQUID, pval = TRUE,
            title ="Overall Survival by NOTCH2 PLASMA expression in 15 cases")
+
+##univariable cox, KN, plasma categorical data##################
+cox_model_notch2_plasma <- coxph(Surv(OS, STATUS) ~ NOCTH2_P, data = ALL_SURV_LIQUID)
+summary(cox_model_notch2_plasma)
+
+cox_model_CTNNB1_plasma <- coxph(Surv(OS, STATUS) ~ CTNNB1_P, data = ALL_SURV_LIQUID)
+summary(cox_model_CTNNB1_plasma)
+
+#cox_model_DLL1_plasma <- coxph(Surv(OS, STATUS) ~ DLL1_P, data = ALL_SURV_LIQUID)
+#summary(cox_model_DLL1_plasma)# not enough data
+
+cox_model_HES1_plasma <- coxph(Surv(OS, STATUS) ~ HES1_P, data = ALL_SURV_LIQUID)
+summary(cox_model_HES1_plasma) #mega dideli skaičiai
+
+##univariable cox, KN, plasma numbered data##################
+cox_model_HES1_plasma <- coxph(Surv(OS, STATUS) ~ HES1_P_norm, data = ALL_SURV_LIQUID)
+summary(cox_model_HES1_plasma) #more managable skaičiai
+
+##median survival plasma, KN categorical data###########################
+hes1_fit <- survfit(Surv(OS, STATUS) ~ HES1_P, data = ALL_SURV_LIQUID)
+summary(hes1_fit)$table #gives months
+summary(hes1_fit, times = 12)$surv #gives survival prob at 1 year
+summary(hes1_fit, times = 36)$surv #gives survival prob at 3 yrs
+summary(hes1_fit, times = 60)$surv #gives survival prob at 5 yrs
+#what is median survival overall?
+fit_all <- survfit(Surv(OS, STATUS) ~ 1, data = ALL_SURV_LIQUID)
+summary(fit_all)$table #not reached
+
+##median survival plasma, KN numbered data###########################
+hes1_fit_norm <- survfit(Surv(OS, STATUS) ~ HES1_P_norm, data = ALL_SURV_LIQUID)
+summary(hes1_fit_norm)$table #gives months
+summary(hes1_fit_norm, times = 12)$surv #gives survival prob at 1 year
+summary(hes1_fit_norm, times = 36)$surv #gives survival prob at 3 yrs
+summary(hes1_fit_norm, times = 60)$surv #gives survival prob at 5 yrs
+#what is median survival overall?
+fit_all <- survfit(Surv(OS, STATUS) ~ 1, data = ALL_SURV_LIQUID)
+summary(fit_all)$table #not reached
+#ant tiek mažai data kad net neskaičiuoja kaip numbered
+ALL_SURV_LIQUID$HES1_P_norm
+
 #PLASMA FIHSER TESTS###########################################
 #fisher tests on urine
 fisher.test(table(LIQUID_DF_15$TYPE, LIQUID_DF_15$NOCTH2_P))
