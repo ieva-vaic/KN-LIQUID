@@ -1,4 +1,4 @@
-#KN-  liquid 2026 01 14, 16
+#KN-  liquid 2026 01 14, 16, 19
 #FULL NP data, after additional np cases
 Sys.setenv(LANG = "en")
 library(tidyverse)
@@ -31,6 +31,7 @@ results_normalcy <- lapply(DATA_names, function(v) {
 })
 names(results_normalcy) <- DATA_names
 results_normalcy #Not normal NP NOTCH2 endometrial cancer and np HES1 benign
+table(LIQUID_DF$TYPE_BENIGN2, useNA = "a")
 #test variance
 # Loop through all variables in DATA_names
 variance_results <- lapply(DATA_names, function(v) {
@@ -932,3 +933,186 @@ gt_table_np_HGSOC_OTHER <- results_np_HGSOC_OTHER %>%
   )
 #show
 gt_table_np_HGSOC_OTHER
+#RSS_BENING NP ALL#################################################
+#create a new grouping where RSS and BENIGN is one
+LIQUID_DF <- LIQUID_DF %>%
+  mutate(
+    TYPE_BENIGN2 = if_else(TYPE %in% c("RSS", "BENIGN"),
+                           "BENIGN",
+                           TYPE)
+  )
+table(LIQUID_DF$TYPE_BENIGN2, useNA = "a")
+##test normalcy of my variables, RSS+BENIGN#####################################
+results_normalcy2 <- lapply(DATA_names, function(v) {
+  by(LIQUID_DF[[v]], LIQUID_DF$TYPE_BENIGN2, function(x) {
+    if (length(na.omit(x)) >= 3)
+      shapiro.test(x)$p.value
+    else NA
+  })
+})
+names(results_normalcy2) <- DATA_names
+results_normalcy2 #Not normal NP NOTCH2 endometrial cancer
+
+#test variance
+# Loop through all variables in DATA_names
+variance_results2 <- lapply(DATA_names, function(v) {
+  # Select variable and TYPE
+  df <- LIQUID_DF[, c(v, "TYPE_BENIGN2")]
+  
+  # Remove NA
+  df <- df[!is.na(df[[v]]), ]
+  
+  # Only test if at least 2 groups have data
+  if(length(unique(df$TYPE_BENIGN2)) > 1) {
+    test <- leveneTest(df[[v]] ~ df$TYPE_BENIGN2, center = median)
+    pval <- test[1, "Pr(>F)"]
+  } else {
+    pval <- NA
+  }
+  
+  data.frame(
+    variable = v,
+    levene_p = pval,
+    equal_variance = ifelse(!is.na(pval) & pval > 0.05, TRUE, FALSE)
+  )
+})
+
+# Combine into a single table
+variance_results2 <- bind_rows(variance_results2)
+
+# View the results
+variance_results2 #not equal in DLL1 urine and CTNNB1 TUMOR
+
+##ANOVA, RSS+BENIGN###########################
+#ANOVA (for normal data) - CTNNB1, DLL1 and HES1
+# CTNNB1
+anova_ctnnb1_BENIGN2 <- aov(CTNNB1_NP ~ TYPE_BENIGN2, data = LIQUID_DF)
+summary(anova_ctnnb1_BENIGN2) #significant
+TukeyHSD(anova_ctnnb1_BENIGN2) #significant: ENDOMETRIAL CANCER-BENIGN, HGSOC-ENDOMETRIAL CANCER
+#DLL1
+anova_dll1_BENIGN2 <- aov(DLL1_NP ~ TYPE_BENIGN2, data = LIQUID_DF)
+summary(anova_dll1_BENIGN2) #significant
+TukeyHSD(anova_dll1_BENIGN2) #significant: BENING-ENDOMETRIAL CANCER , HGSOC-ENDOMETRIAL CANCER
+#HES1
+anova_hes1_BENIGN2 <- aov(HES1_NP ~ TYPE_BENIGN2, data = LIQUID_DF)
+summary(anova_hes1_BENIGN2) #not significant
+TukeyHSD(anova_hes1_BENIGN2) #significant: HGSOC-BENIGN, HGSOC-ENDOMETRIAL CANCER 
+#ANOVA (for not normal data) - NOTCH2 and HES1
+#NOTCH2
+kruskal.test(NOTCH2_NP ~ TYPE_BENIGN2, data = LIQUID_DF) #significant
+pairwise.wilcox.test(LIQUID_DF$NOTCH2_NP, LIQUID_DF$TYPE_BENIGN2, p.adjust.method = "bonferroni")
+#significant: BENING-ENDOMETRIAL CANCER, HGSOC-ENDOMETRIAL CANCER, OTHER-ENDOMETRIAL CANCER
+##boxplot full np, RSS+BENIGN ###########################
+#melt table for expression
+GroupNP_table_BENIGN2 <- melt(LIQUID_DF[, c(36,15:18)], id.vars="TYPE_BENIGN2",
+                              measure.vars=c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"))
+#make p values
+each.vs.ref_sig_BENIGN2 <- tibble::tribble(
+  ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
+  "ENDOMETRIAL CANCER",   "BENIGN", 0.0000576, -2, "CTNNB1_NP",#
+  "ENDOMETRIAL CANCER",   "HGSOC", 0.0009424, -1, "CTNNB1_NP",#
+  "ENDOMETRIAL CANCER",   "BENIGN", 0.00095 , -2, "NOTCH2_NP",#
+  "ENDOMETRIAL CANCER",   "HGSOC", 0.00099, -1, "NOTCH2_NP",#
+  "ENDOMETRIAL CANCER",   "OTHER", 0.04504, -1.5, "NOTCH2_NP",#
+  "ENDOMETRIAL CANCER",   "HGSOC", 0.0142440, -2, "HES1_NP",#
+  "BENIGN",   "HGSOC", 0.0340468, -3, "HES1_NP",#
+  "ENDOMETRIAL CANCER",   "HGSOC", 0.0471971, -6, "DLL1_NP",#
+  "ENDOMETRIAL CANCER",   "BENIGN", 0.0027565, -7, "DLL1_NP"#
+)
+
+TYPE_FULL_plot_BENIGN2 <- ggplot(GroupNP_table_BENIGN2, aes(x=TYPE_BENIGN2 , y=value, fill = variable)) +
+  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = TYPE_BENIGN2 )) +
+  geom_jitter(aes(color = TYPE_BENIGN2 ), size=1, alpha=0.5) +
+  ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
+  facet_wrap(.~ variable, nrow = 2, scales = "free") +
+  add_pvalue(each.vs.ref_sig_BENIGN2, label = "p.adj") + #pvalue
+  theme_minimal()+
+  theme(
+    strip.text.x = element_text(
+      size = 12, face = "bold.italic"
+    ),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5))+
+  labs(x=NULL)+
+  stat_boxplot(geom ='errorbar')+
+  #scale_fill_manual(values = custom_colors) +
+  #scale_color_manual(values = custom_colors) +
+  scale_y_continuous(labels = function(x) 
+    gsub("-", "\u2212", as.character(x))) #add long "-" signs
+
+TYPE_FULL_plot_BENIGN2
+
+##ROC hgsoc VS BENIGN, RSS+BENING ########################################
+#make hgsoc VS BENIGN DF
+HGSOC_BENIGN_RSS_DF<- LIQUID_DF %>%
+  filter(TYPE_BENIGN2%in% c("BENIGN", "HGSOC"))%>% #filter for right samples
+  dplyr::select("TYPE_BENIGN2", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
+  )
+HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 <- factor(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2)
+HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 <- droplevels(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2) #drop unused
+HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2  <- relevel(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 , ref = "BENIGN") #set control
+roc_results_np_HGOSC_benignrss<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
+  roc(response = HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2, predictor = HGSOC_BENIGN_RSS_DF[[col]])})
+names(roc_results_np_HGOSC_benignrss) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
+roc_results_np_HGOSC_benignrss
+#extract the aucs
+auc_values_np_HGSOC_benignrss <- sapply(roc_results_np_HGOSC_benignrss, function(roc_obj) {auc(roc_obj)})
+auc_values_np_HGSOC_benignrss #extracted aucs
+#roc figure 
+roc_plot3rss <- function() {
+  par(pty = "s") #sets square
+  plot.roc(roc_results_np_HGOSC_benignrss[["NOTCH2_NP"]], print.auc = F, col = "#dcbeff",
+           cex.main=0.8, 
+           main ="Gerybinių pokyčių ir RSS atskyrimas nuo HGSOC",
+           xlab = "1 - Specifiškumas", 
+           ylab = "Jautrumas", 
+           legacy.axes = T) #title
+  lines(roc_results_np_HGOSC_benignrss[["CTNNB1_NP"]], col = "#911eb4", lwd =2) 
+  lines(roc_results_np_HGOSC_benignrss[["DLL1_NP"]], col ="#ffd8b1", lwd =2) 
+  lines(roc_results_np_HGOSC_benignrss[["HES1_NP"]], col = "#42d4f4", lwd =2) 
+  legend("bottomright", legend = c( expression(italic("NOTCH2")),
+                                    expression(italic("CTNNB1")),
+                                    expression(italic("DLL1")), 
+                                    expression(italic("HES1"))
+  ),
+  
+  col = c("#dcbeff", "#911eb4", "#ffd8b1", "#42d4f4"), lty = 1, 
+  cex = 0.7, lwd =3)
+}
+#plot
+roc_plot3rss()
+#roc table
+coords_results_np_HGSOC_benignrss<- lapply(roc_results_np_HGOSC_benignrss, function(roc_obj) {
+  coords(roc_obj, "best", ret = c("threshold", "accuracy", "sensitivity",
+                                  "specificity"),
+         transpose = FALSE)
+})
+coords_results_np_HGSOC_benignrss
+#create df
+results_np_HGSOC_benignrss<- data.frame(
+  Predictor = c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"),
+  AUC = auc_values_np_HGSOC_benignrss,
+  do.call(rbind,coords_results_np_HGSOC_benignrss) 
+)
+results_np_HGSOC_benignrss
+#lithuanize it 
+colnames(results_np_HGSOC_benignrss) <- c("Biožymuo", "plotas po kreive", "slenkstinė vertė", 
+                                          "tikslumas", "jautrumas", "specifiškumas")
+rownames(results_np_HGSOC_benignrss) <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_HGSOC_benignrss$Biožymuo <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+#nice formating of the Table metrics for ROC OC
+gt_table_np_HGSOC_benrss <- results_np_HGSOC_benignrss %>%
+  gt() %>%
+  tab_header(
+    title = "ROC kriterijai", 
+    subtitle = "Gerybinių pokyčių ir RSS atskyrimas nuo HGSOC") %>%
+  fmt_number(
+    columns = everything(),
+    decimals = 3
+  ) %>%
+  tab_style(
+    style = cell_text(style = "italic"),
+    locations = cells_body(columns = vars(Biožymuo))
+  )
+#show
+gt_table_np_HGSOC_benrss
