@@ -232,3 +232,16 @@ LAVAGE_df %>%
 #STATUS for lavage
 table(LAVAGE_df$TYPE, LAVAGE_df$STATUS, useNA = "a")
 table(LAVAGE_df$STATUS, useNA = "a")
+
+#which kinds of cancer is in the "other" groups histologically?#############
+#plasma samples
+View(PLASMA_URINE_df[PLASMA_URINE_df$TYPE == "OTHER",])
+#lavage samples
+LAVAGE_OTHER <- LAVAGE_df[LAVAGE_df$TYPE == "OTHER",]
+table(LAVAGE_OTHER$TYPE_long)
+#lavage samples benign
+LAVAGE_BEN <- LAVAGE_df[LAVAGE_df$TYPE == "BENIGN",]
+table(LAVAGE_BEN$Diagnosis)
+#lavage samples endometrial
+LAVAGE_BEN <- LAVAGE_df[LAVAGE_df$TYPE == "ENDOMETRIAL CANCER",]
+table(LAVAGE_BEN$Diagnosis)
