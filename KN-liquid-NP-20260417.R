@@ -1,4 +1,4 @@
-#KN-  liquid 2026 04 17, 2026 05 05, 07
+#KN-  liquid 2026 04 17, 2026 05 05, 07, 11
 #FINAL PLOTS FOR LIQUID PAPER - NP ONLY
 Sys.setenv(LANG = "en")
 library(tidyverse)
@@ -75,22 +75,39 @@ TukeyHSD(anova_ctnnb1) #significant:
 #ENDOMETRIAL CANCER-BENIGN p.adj = 0.0012000, 
 #HGSOC-ENDOMETRIAL CANCER p.adj = 0.0015951, 
 #RSS-ENDOMETRIAL CANCER p.adj = 0.0003289
+
 #ANOVA (for normal data) - DLL1 
 anova_dll1 <- aov(DLL1_NP ~ TYPE, data = LAVAGE_df)
 summary(anova_dll1) #significant
 TukeyHSD(anova_dll1) #significant: RSS-ENDOMETRIAL CANCER p.adj = 0.0015694
-#ANOVA (for not normal data) - NOTCH2 
-kruskal.test(NOTCH2_NP ~ TYPE, data = LAVAGE_df) #significant
-pairwise.wilcox.test(LAVAGE_df$NOTCH2_NP, LAVAGE_df$TYPE, p.adjust.method = "bonferroni")
 #significant:
 #ENDOMETRIAL CANCER-BENIGN p = 0.0104,
 #HGSOC-ENDOMETRIAL CANCER p = 0.0017,         
-#RSS-ENDOMETRIAL CANCER p = 0.0092          
+#RSS-ENDOMETRIAL CANCER p = 0.0092      
+
 #ANOVA (for not normal data) - HES1
 kruskal.test(HES1_NP ~ TYPE, data = LAVAGE_df) #significant
 pairwise.wilcox.test(LAVAGE_df$HES1_NP, LAVAGE_df$TYPE, p.adjust.method = "bonferroni") 
 #siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.013
+dunnTest(HES1_NP ~ TYPE,
+         data = LAVAGE_df,
+         method = "bonferroni")
+#siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.02355395 
 
+
+#ANOVA (for not normal data) - NOTCH2
+kruskal.test(NOTCH2_NP ~ TYPE, data = LAVAGE_df) #significant 
+pairwise.wilcox.test(LAVAGE_df$NOTCH2_NP, LAVAGE_df$TYPE,
+                     p.adjust.method = "bonferroni")
+#siginifcant: BENIGN -ENDOMETRIAL CANCER p = 0.0104  
+#siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.0017    
+#siginifcant: RSS-ENDOMETRIAL CANCER p = 0.0092   
+dunnTest(NOTCH2_NP ~ TYPE,
+         data = LAVAGE_df,
+         method = "bonferroni")
+#significant: BENIGN - ENDOMETRIAL CANCER p = 0.027194259
+#siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.001706016
+#siginifcant: RSS-ENDOMETRIAL CANCER p = 00.007731407
 ##boxplot full np ##########################################
 
 #melt table for expression
@@ -107,10 +124,10 @@ each.vs.ref_sig <- tibble::tribble(
   "EC",   "HGSOC", 0.003, -1, "CTNNB1_NP",
   "EC",   "RSS", 0.001, -1.5, "CTNNB1_NP",
   "EC",   "RSS", 0.002, -6, "DLL1_NP",
-  "EC",   "BENIGN", 0.0104, -2, "NOTCH2_NP",
-  "EC",   "HGSOC", 0.0014, -1, "NOTCH2_NP",
-  "EC",   "RSS", 0.009, -1.5, "NOTCH2_NP",
-  "EC",   "HGSOC", 0.013, -2, "HES1_NP"
+  "EC",   "BENIGN", 0.027, -2, "NOTCH2_NP",#dunn
+  "EC",   "HGSOC", 0.002, -1, "NOTCH2_NP",#dunn
+  "EC",   "RSS", 0.008, -1.5, "NOTCH2_NP",#dunn
+  "EC",   "HGSOC", 0.024, -2, "HES1_NP"#dunn
 )
 
 TYPE_FULL_plot <- ggplot(GroupNP_table, aes(x=TYPE , y=value, fill = variable)) +
@@ -154,7 +171,7 @@ TYPE_FULL_plot <- ggplot(GroupNP_table, aes(x=TYPE , y=value, fill = variable)) 
 
 TYPE_FULL_plot
 #save
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_FULL_20260421.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_FULL_20260511.png",
        plot = TYPE_FULL_plot,
        width = 18,
        height = 16,
@@ -236,7 +253,13 @@ kruskal.test(NOTCH2_NP ~ TYPE_BENIGN2, data = LAVAGE_df) #significant
 pairwise.wilcox.test(LAVAGE_df$NOTCH2_NP, LAVAGE_df$TYPE_BENIGN2, p.adjust.method = "bonferroni")
 #significant: BENING-ENDOMETRIAL CANCER 0.00095 ,
 ##HGSOC-ENDOMETRIAL CANCER 0.00099,
-##OTHER-ENDOMETRIAL CANCER 0.04504            
+##OTHER-ENDOMETRIAL CANCER 0.04504   
+dunnTest(NOTCH2_NP ~ TYPE_BENIGN2,
+         data = LAVAGE_df,
+         method = "bonferroni")
+#significant: BENING-ENDOMETRIAL CANCER 0.002364269,
+##HGSOC-ENDOMETRIAL CANCER 0.001023609,
+##OTHER-ENDOMETRIAL CANCER   0.154074655 #not significant anymore
 ##boxplot full np, RSS+BENIGN ###########################
 #melt table for expression
 GroupNP_table_BENIGN2 <- melt(LAVAGE_df[, c(38,15:18)], id.vars="TYPE_BENIGN2",
@@ -250,15 +273,15 @@ GroupNP_table_BENIGN2 <- GroupNP_table_BENIGN2 %>%
 #make p values RSS+benign
 each.vs.ref_sig_BENIGN2 <- tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-  "EC",   "BENIGN + RSS", 0.0000576, -2, "CTNNB1_NP",#
-  "EC",   "HGSOC", 0.0009424, -1, "CTNNB1_NP",#
-  "EC",   "BENIGN + RSS", 0.00095 , -2, "NOTCH2_NP",#
-  "EC",   "HGSOC", 0.00099, -1, "NOTCH2_NP",#
-  "EC",   "OTHER OC", 0.04504, -1.5, "NOTCH2_NP",#
-  "EC",   "HGSOC", 0.0142440, -2, "HES1_NP",#
-  "BENIGN + RSS",   "HGSOC", 0.0340468, -1.5, "HES1_NP",#
-  "EC",   "HGSOC", 0.0471971, -6, "DLL1_NP",#
-  "EC",   "BENIGN + RSS", 0.0027565, -7, "DLL1_NP"#
+  "EC",   "BENIGN + RSS", 0.001, -2, "CTNNB1_NP",#
+  "EC",   "HGSOC", 0.001, -1, "CTNNB1_NP",#
+  "EC",   "BENIGN + RSS", 0.002 , -2, "NOTCH2_NP",#dunn
+  "EC",   "HGSOC", 0.001, -1, "NOTCH2_NP",#dunn
+#  "EC",   "OTHER OC", 0.04504, -1.5, "NOTCH2_NP",#wilcox, dunn not significant after adj
+  "EC",   "HGSOC", 0.014, -2, "HES1_NP",#
+  "BENIGN + RSS",   "HGSOC", 0.034, -1.5, "HES1_NP",#
+  "EC",   "HGSOC", 0.047, -6, "DLL1_NP",#
+  "EC",   "BENIGN + RSS", 0.003, -7, "DLL1_NP"#
 )
 
 #make figure RSS+benign
@@ -302,7 +325,7 @@ TYPE_RSS_BENIGN_plot <- ggplot(GroupNP_table_BENIGN2, aes(x=TYPE_BENIGN2 , y=val
 
 TYPE_RSS_BENIGN_plot
 #save RSS+benign
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_20260503.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_20260511.png",
        plot = TYPE_RSS_BENIGN_plot,
        width = 18,
        height = 16,
@@ -375,13 +398,25 @@ TukeyHSD(anova_hes1_BENIGN3)
 #NOTCH2
 kruskal.test(NOTCH2_NP ~ TYPE_BENIGN3, data = LAVAGE_df) #significant
 pairwise.wilcox.test(LAVAGE_df$NOTCH2_NP, LAVAGE_df$TYPE_BENIGN3, p.adjust.method = "bonferroni")
-#significant:ENDOMETRIAL CANCER-BENIGN ENDOMETRIAL CANCER 0.00047 ;
+#significant:ENDOMETRIAL CANCER-BENIGN  0.00047 ;
 # ENDOMETRIAL CANCER-OC 0.00114  
+dunnTest(NOTCH2_NP ~ TYPE_BENIGN3,
+         data = LAVAGE_df,
+         method = "bonferroni")
+#significant:ENDOMETRIAL CANCER-BENIGN ENDOMETRIAL CANCER 0.0011821343 ;
+# ENDOMETRIAL CANCER-OC 0.0009872979  
+
 #CTNNB1
 kruskal.test(CTNNB1_NP ~ TYPE_BENIGN3, data = LAVAGE_df) #significant
 pairwise.wilcox.test(LAVAGE_df$CTNNB1_NP, LAVAGE_df$TYPE_BENIGN3, p.adjust.method = "bonferroni")
 #significant::ENDOMETRIAL CANCER-BENIGN ENDOMETRIAL CANCER 0.0062  ;
 # ENDOMETRIAL CANCER-OC 0.0245   
+dunnTest(CTNNB1_NP ~ TYPE_BENIGN3,
+         data = LAVAGE_df,
+         method = "bonferroni")
+#significant::ENDOMETRIAL CANCER-BENIGN ENDOMETRIAL CANCER 0.002021517  ;
+# ENDOMETRIAL CANCER-OC 0.043300035   
+
 ##boxplot full np, HGSOC+OTHERS#######################
 #melt table for expression
 GroupNP_table_BENIGN3 <- melt(LAVAGE_df[, c(39,15:18)], id.vars="TYPE_BENIGN3",
@@ -394,14 +429,14 @@ GroupNP_table_BENIGN3 <- GroupNP_table_BENIGN3 %>%
 #make p values RSS+benign
 each.vs.ref_sig_BENIGN3 <- tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-  "EC",   "BENIGN + RSS", 0.0072412, -5, "DLL1_NP",#
-  "EC",   "OC", 0.0283727, -4, "DLL1_NP",#
-  "EC",   "OC", 0.0072412, -2, "HES1_NP",#
-  "BENIGN + RSS",   "OC", 0.0163029, -1, "HES1_NP",#
-  "EC",   "OC", 0.00114, -2, "NOTCH2_NP",#
-  "EC",   "BENIGN + RSS", 0.00047 , -3, "NOTCH2_NP",#
-  "EC",   "BENIGN + RSS", 0.0062 , -2, "CTNNB1_NP",#
-  "EC",   "OC", 0.0245, -1, "CTNNB1_NP"#
+  "EC",   "BENIGN + RSS", 0.007, -5, "DLL1_NP",#
+  "EC",   "OC", 0.028, -4, "DLL1_NP",#
+  "EC",   "OC", 0.007, -2, "HES1_NP",#
+  "BENIGN + RSS",   "OC", 0.016, -1, "HES1_NP",#
+  "EC",   "OC", 0.001, -2, "NOTCH2_NP",#dunn
+  "EC",   "BENIGN + RSS", 0.001 , -3, "NOTCH2_NP",#dunn
+  "EC",   "BENIGN + RSS", 0.002 , -2, "CTNNB1_NP",#dunn
+  "EC",   "OC", 0.043, -1, "CTNNB1_NP"#dunn
 )
 #make figure RSS+benign
 
@@ -440,10 +475,9 @@ TYPE_RSS_BENIGN_plot3 <- ggplot(GroupNP_table_BENIGN3, aes(x=TYPE_BENIGN3 , y=va
     "OC" = "#3C5488"
   ))
 
-
 TYPE_RSS_BENIGN_plot3
 #save RSS+benign
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_HGSOC_OTHER_20260505.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_HGSOC_OTHER_20260511.png",
        plot = TYPE_RSS_BENIGN_plot3,
        width = 18,
        height = 16,
