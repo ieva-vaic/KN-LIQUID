@@ -235,7 +235,7 @@ KN_OC$Stage_grouped <- factor(
   KN_OC$Stage_grouped,
   levels = c("I&II", "III&IV")
 )
-
+table(KN_OC$Stage_grouped , useNA = "a")
 #NORMALCY stage OC 2 groups##########################################
 normality_resultsOC2 <- KN_OC %>%
   pivot_longer(
@@ -278,9 +278,9 @@ t.test(HES1_NP~ Stage_grouped,
 each.vs.ref_sig <- tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
   "I&II",   "III&IV", 0.149, -2, "CTNNB1_NP",
-  "I&II",   "III&IV", 0.7019, -1, "NOTCH2_NP",
-  "I&II",   "III&IV", 0.07831, -1.5, "DLL1_NP",
-  "I&II",   "III&IV", 0.03262, -2, "HES1_NP",
+  "I&II",   "III&IV", 0.702, -1, "NOTCH2_NP",
+  "I&II",   "III&IV", 0.078, -1.5, "DLL1_NP",
+  "I&II",   "III&IV", 0.033, -2, "HES1_NP",
 
 )
 #melt table for expression
@@ -295,7 +295,15 @@ STAGE_OC <- ggplot(GroupNP_table, aes(x=Stage_grouped , y=value, fill = variable
   geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = Stage_grouped )) +
   geom_jitter(aes(color = Stage_grouped ), size=1, alpha=0.5) +
   ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
-  facet_wrap(.~ variable, nrow = 2, scales = "free") +
+  facet_wrap(.~ variable, nrow = 2, scales = "free",
+             labeller = labeller(
+               variable = c(
+                 "CTNNB1_NP" = "CTNNB1",
+                 "DLL1_NP" = "DLL1",
+                 "HES1_NP" = "HES1",
+                 "NOTCH2_NP" = "NOTCH2"
+               ))
+             ) +
   add_pvalue(each.vs.ref_sig, label = "p.adj") + #pvalue
   theme_minimal()+
   theme(
@@ -322,7 +330,7 @@ STAGE_OC <- ggplot(GroupNP_table, aes(x=Stage_grouped , y=value, fill = variable
 
 STAGE_OC
 #save
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/stage_oc_20260508.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/stage_oc_20260521.png",
        plot = STAGE_OC,
        width = 15,
        height = 16,
@@ -403,3 +411,106 @@ cor.test(KN_OC$HES1_NP,
          KN_OC$CA125_num, method = "spearman") 
 cor.test(KN_OC$CTNNB1_NP,
          KN_OC$CA125_num, method = "spearman")
+#Stage: stage 1 vs other #################################
+#group for convenience
+KN_OC$Stage_grouped2 <- ifelse(
+  KN_OC$Stage_simple == 1,
+  "I",
+  "II&III&IV"
+)
+table(KN_OC$Stage_grouped2, useNA = "a") #10 vs 51
+##NORMALCY stage OC 1 vs other groups##########################################
+normality_results_stage2 <- KN_OC %>%
+  pivot_longer(
+    cols = all_of(DATA),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  group_by(Stage_grouped2, variable) %>%
+  summarise(
+    n = sum(!is.na(value)),
+    shapiro_p = if (n >= 3 & n <= 5000) shapiro.test(value)$p.value else NA_real_,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    normal = ifelse(shapiro_p > 0.05, TRUE, FALSE)
+  )
+normality_results_stage2 #all normal
+
+##Variance stage OC grouped####################
+var.test(CTNNB1_NP ~ Stage_grouped2, data = KN_OC)
+var.test(NOTCH2_NP ~ Stage_grouped2, data = KN_OC)
+var.test(HES1_NP ~ Stage_grouped2, data = KN_OC)
+var.test(DLL1_NP ~ Stage_grouped2, data = KN_OC)
+#all normal variance
+
+##t.tests OC grouped stage 1 vs other ###############
+t.test(NOTCH2_NP ~ Stage_grouped2,
+       data = KN_OC,
+       var.equal = TRUE)
+t.test(DLL1_NP ~ Stage_grouped2, #0.02384
+       data = KN_OC,
+       var.equal = TRUE)#0.5937
+t.test(CTNNB1_NP ~ Stage_grouped2,
+       data = KN_OC,
+       var.equal = TRUE)#0.4456
+t.test(HES1_NP~ Stage_grouped2,
+       data = KN_OC,
+       var.equal = TRUE) #0.07291
+
+##plot OC grouped stage####################
+#make p values
+each.vs.ref_sig_stage2 <- tibble::tribble(
+  ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
+  "I",   "II&III&IV", 0.02384, -2, "CTNNB1_NP",
+  "I",   "II&III&IV", 0.5937, -1, "NOTCH2_NP",
+  "I",   "II&III&IV", 0.4456, -1.5, "DLL1_NP",
+  "I",   "II&III&IV", 0.07291, -2, "HES1_NP",
+  
+)
+#melt table for expression
+GroupNP_table2 <- melt(KN_OC[, c(41,15:18)],
+                       id.vars="Stage_grouped2",
+                       measure.vars=c("NOTCH2_NP",
+                                      "CTNNB1_NP",
+                                      "DLL1_NP",
+                                      "HES1_NP"))
+
+STAGE_OC2 <- ggplot(GroupNP_table2, aes(x=Stage_grouped2 , y=value, fill = variable)) +
+  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = Stage_grouped2 )) +
+  geom_jitter(aes(color = Stage_grouped2 ), size=1, alpha=0.5) +
+  ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
+  facet_wrap(.~ variable, nrow = 2, scales = "free",
+             labeller = labeller(
+               variable = c(
+                 "CTNNB1_NP" = "CTNNB1",
+                 "DLL1_NP" = "DLL1",
+                 "HES1_NP" = "HES1",
+                 "NOTCH2_NP" = "NOTCH2"
+               ))
+  ) +
+  add_pvalue(each.vs.ref_sig_stage2, label = "p.adj") + #pvalue
+  theme_minimal()+
+  theme(
+    strip.text.x = element_text(
+      size = 12, face = "bold.italic"
+    ),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5))+
+  labs(x=NULL,
+       title = "Gene expression in uterine lavage by OC stage")+
+  stat_boxplot(geom ='errorbar')+
+  #scale_fill_manual(values = custom_colors) +
+  #scale_color_manual(values = custom_colors) +
+  scale_y_continuous(labels = function(x) 
+    gsub("-", "\u2212", as.character(x)))+ #add long "-" signs
+  scale_fill_manual(values = c(
+    "II&III&IV" = "#3C5488",
+    "I"   = "#4DBBD5"
+  )) +
+  scale_color_manual(values = c(
+    "II&III&IV" = "#3C5488",
+    "I"   = "#4DBBD5"
+  ))
+
+STAGE_OC2

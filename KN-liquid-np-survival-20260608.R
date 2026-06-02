@@ -1,4 +1,4 @@
-#KN-  liquid 2026 05 08
+#KN-  liquid 2026 05 08, 19
 #FINAL PLOTS FOR LIQUID PAPER - NP ONLY - clinical features
 Sys.setenv(LANG = "en")
 library(tidyverse)
@@ -77,28 +77,41 @@ cox_model_HES1_np <- coxph(Surv(OS, STATUS) ~ HES1_NP, data = OC_SURV_LIQUID)
 summary(cox_model_HES1_np) #hr = 1.304 ci (1.022 - 1.664)  p =0.0327 
 
 ## Fit survival curves#################
-p_ctnnb1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1_NP_f, data = OC_SURV_LIQUID), 
+#ctnnb1
+OC_SURV_LIQUID$CTNNB1<-  OC_SURV_LIQUID$CTNNB1_NP_f 
+p_ctnnb1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1, data = OC_SURV_LIQUID), 
            data = OC_SURV_LIQUID, pval = F,
+           xlab = "Time (months)",palette = c(  "#E64164", "#002060"), 
            title=expression(  "Overall survival by " * italic("CTNNB1") * " expression in UL, all OC cases"))
-p_ctnnb1$plot <- p_ctnnb1$plot + labs(subtitle = "HR = 0.9892; 95% CI: 0.6027 - 1.624; Log-rank  p = 0.966")
+p_ctnnb1$plot <- p_ctnnb1$plot + labs(subtitle = "HR = 0.989; 95% CI: 0.603 - 1.624; Log-rank  p = 0.966")
 print(p_ctnnb1)
-
-p_notch2 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ NOTCH2_NP_f, data = OC_SURV_LIQUID), 
+#notch2
+OC_SURV_LIQUID$NOTCH2 <-  OC_SURV_LIQUID$NOTCH2_NP_f 
+p_notch2 <- ggsDLL1p_notch2 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ NOTCH2, data = OC_SURV_LIQUID), 
            data = OC_SURV_LIQUID, pval = F,
+           xlab = "Time (months)",palette = c(  "#E64164", "#002060"), 
            title=expression(  "Overall survival by " * italic("NOTCH2") * " expression in UL, all OC cases"))
 p_notch2$plot <- p_notch2$plot + labs(subtitle = "HR = 1.142; 95% CI: 0.798 - 1.634; Log-rank  p = 0.468")
 print(p_notch2)
 
-p_dll1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ DLL1_NP_f, data = OC_SURV_LIQUID), 
+#DLL1
+OC_SURV_LIQUID$DLL1 <- OC_SURV_LIQUID$DLL1_NP_f
+p_dll1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ DLL1, data = OC_SURV_LIQUID), 
            data = OC_SURV_LIQUID, pval = F,
+           xlab = "Time (months)",palette = c(  "#E64164", "#002060"), 
            title=expression(  "Overall survival by " * italic("DLL1") * " expression in UL, all OC cases"))
-p_dll1$plot <- p_dll1$plot + labs(subtitle = "HR = 0.6812; 95% CI: 0.4501 - 1.031; Log-rank  p = 0.0695")
+p_dll1$plot <- p_dll1$plot + labs(subtitle = "HR = 0.681; 95% CI: 0.450 - 1.031; Log-rank  p = 0.070")
 print(p_dll1)
 
-p_hes1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1_NP_f, data = OC_SURV_LIQUID), 
+
+#HES1
+OC_SURV_LIQUID$HES1 <- OC_SURV_LIQUID$HES1_NP_f
+p_hes1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1, data = OC_SURV_LIQUID), 
            data = OC_SURV_LIQUID, pval = F,
+           xlab = "Time (months)",
+           palette = c(  "#E64164", "#002060"), 
            title=expression(  "Overall survival by " * italic("HES1") * " expression in UL, all OC cases"))
-p_hes1$plot <- p_hes1$plot + labs(subtitle = "HR = 1.304; 95% CI: 1.022 - 1.664; Log-rank  p = 0.0327")
+p_hes1$plot <- p_hes1$plot + labs(subtitle = "HR = 1.304; 95% CI: 1.022 - 1.664; Log-rank  p = 0.033")
 print(p_hes1)
 
 combined_plot <-
@@ -106,7 +119,7 @@ combined_plot <-
 ( p_notch2$plot | p_ctnnb1$plot )
 
 ggsave(
-  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_NP_survival_combined20260508.png",
+  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_NP_survival_combined20260519.png",
   plot = combined_plot,
   width = 15,
   height = 10,

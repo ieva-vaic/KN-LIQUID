@@ -56,6 +56,7 @@ OC_BEN_lavage <- OC_BEN_lavage[
     )]
   ),
 ]
+table(OC_BEN_lavage$TYPE_BENIGN3, useNA = "a") #27 vs 55
 brglm.model_2 <- glm(OC_BEN_lavage$TYPE_BENIGN3 ~ NOTCH2_NP  + CTNNB1_NP+  DLL1_NP +HES1_NP,
                      data = OC_BEN_lavage,
                      family = binomial("logit"), method = "brglm_fit") #no problems
@@ -373,6 +374,7 @@ EC_BEN_lavage <- EC_BEN_lavage[
     )]
   ),
 ]
+table(EC_BEN_lavage$TYPE_BENIGN3, useNA = "a")
 brglm.model_3<- glm(EC_BEN_lavage$TYPE_BENIGN3 ~ NOTCH2_NP  + CTNNB1_NP+  DLL1_NP +HES1_NP,
                     data = EC_BEN_lavage,
                     family = binomial("logit"), method = "brglm_fit") #no problems
@@ -691,6 +693,7 @@ EC_OC_lavage <- EC_OC_lavage[
     )]
   ),
 ]
+table(EC_OC_lavage$TYPE_BENIGN3, useNA = "a")
 brglm.model_4<- glm(EC_OC_lavage$TYPE_BENIGN3 ~ NOTCH2_NP  + CTNNB1_NP+  DLL1_NP +HES1_NP,
                     data = EC_OC_lavage,
                     family = binomial("logit"), method = "brglm_fit") #no problems

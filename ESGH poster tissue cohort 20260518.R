@@ -24,6 +24,7 @@ library(multcomp)
 library(ggpubr) 
 library(ComplexHeatmap)
 library(circlize)
+library(rstatix)
 #read RDS
 LIQUID_DF_final <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/liquid_20260415.RDS")
 #leave tumor only
@@ -492,9 +493,9 @@ NOTCH2pair <- ggplot(notch2_long, aes(x = gene, y = expression, group = `Laborat
   geom_line(alpha = 0.5) +
   theme_classic() +
   labs(
-    x = "Tissue type",
+    x = "Sample type",
     y = expression(italic("NOTCH2")*" relative gene expression"),
-    title =expression(italic("NOTCH2")*" gene expression across tissues"),
+    title =expression(italic("NOTCH2")*" gene expression across samples"),
     subtitle = paste0("Paired t-test p < 0.001 ")
   )
 NOTCH2pair
@@ -523,9 +524,9 @@ CTNNB1pair <- ggplot(CTNNB1_long, aes(x = gene, y = expression, group = `Laborat
   geom_line(alpha = 0.5) +
   theme_classic() +
   labs(
-    x = "Tissue type",
+    x = "Sample type",
     y = expression(italic("CTNNB1")*" relative gene expression"),
-    title =expression(italic("CTNNB1")*" gene expression across tissues"),
+    title =expression(italic("CTNNB1")*" gene expression across samples"),
     subtitle = paste0("Paired t-test p < 0.001 ")
   )
 CTNNB1pair
@@ -554,9 +555,9 @@ DLL1paired <- ggplot(DLL1_long, aes(x = gene, y = expression, group = `Laborator
   geom_line(alpha = 0.5) +
   theme_classic() +
   labs(
-    x = "Tissue type",
+    x = "Sample type",
     y = expression(italic("DLL1")*" relative gene expression"),
-    title =expression(italic("DLL1")*" gene expression across tissues"),
+    title =expression(italic("DLL1")*" gene expression across samples"),
     subtitle = paste0("Paired t-test p = ", signif(pval3, 3))
   )
 DLL1paired
@@ -588,9 +589,9 @@ HES1pair <- ggplot(HES1_long, aes(x = gene, y = expression, group = `Laboratorin
   geom_line(alpha = 0.5) +
   theme_classic() +
   labs(
-    x = "Tissue type",
+    x = "Sample type",
     y = expression(italic("HES1")*" relative gene expression"),
-    title =expression(italic("HES1")*" gene expression across tissues"),
+    title =expression(italic("HES1")*" gene expression across samples"),
     subtitle = paste0("Paired t-test p = ", signif(pval4, 3))
   )
 HES1pair
@@ -600,9 +601,9 @@ combined <-
   ( HES1pair |  NOTCH2pair )/
   (CTNNB1pair | DLL1paired)
 ggsave(
-  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/TISSUEcohort_PAIRED20260518.png",
+  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/TISSUEcohort_PAIRED20260525.png",
   plot = combined ,
-  width = 8,
+  width = 8.2,
   height =8,
   dpi = 300
 )

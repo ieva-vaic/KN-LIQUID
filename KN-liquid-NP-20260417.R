@@ -109,7 +109,7 @@ dunnTest(NOTCH2_NP ~ TYPE,
 #siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.001706016
 #siginifcant: RSS-ENDOMETRIAL CANCER p = 00.007731407
 ##boxplot full np ##########################################
-
+table(LAVAGE_df$TYPE, useNA = "a")
 #melt table for expression
 GroupNP_table <- melt(LAVAGE_df[, c(12,15:18)], id.vars="TYPE",  measure.vars=c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"))
 #fix names
@@ -341,7 +341,7 @@ LAVAGE_df <- LAVAGE_df %>%
                            "OC",
                            TYPE_BENIGN2)
   )
-table(LAVAGE_df$TYPE_BENIGN3, useNA = "a") #now 31 benign
+table(LAVAGE_df$TYPE_BENIGN3, useNA = "a") #now 61 OC
 ##test normalcy of my variables, OC#####################################
 results_normalcy3 <- lapply(DATA, function(v) {
   by(LAVAGE_df[[v]], LAVAGE_df$TYPE_BENIGN3, function(x) {
@@ -492,6 +492,7 @@ HGSOC_BENIGN_DF<- LAVAGE_df %>%
   )
 HGSOC_BENIGN_DF$TYPE <- droplevels(HGSOC_BENIGN_DF$TYPE) #drop unused
 HGSOC_BENIGN_DF$TYPE  <- relevel(HGSOC_BENIGN_DF$TYPE , ref = "BENIGN") #set control
+table(HGSOC_BENIGN_DF$TYPE, useNA = "a")
 roc_results_np_HGOSC_benign<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
   roc(response = HGSOC_BENIGN_DF$TYPE, predictor = HGSOC_BENIGN_DF[[col]])})
 names(roc_results_np_HGOSC_benign) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
@@ -598,6 +599,7 @@ EC_BENIGN_DF<- LAVAGE_df %>%
   )
 EC_BENIGN_DF$TYPE <- droplevels(EC_BENIGN_DF$TYPE) #drop unused
 EC_BENIGN_DF$TYPE  <- relevel(EC_BENIGN_DF$TYPE , ref = "BENIGN") #set control
+table(EC_BENIGN_DF$TYPE, useNA = "a")
 roc_results_np_EC_benign<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
   roc(response = EC_BENIGN_DF$TYPE, predictor = EC_BENIGN_DF[[col]])})
 names(roc_results_np_EC_benign) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
@@ -701,6 +703,7 @@ HGSOC_BENIGN_RSS_DF<- LAVAGE_df %>%
 HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 <- factor(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2)
 HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 <- droplevels(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2) #drop unused
 HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2  <- relevel(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 , ref = "BENIGN") #set control
+table(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2, useNA = "a")
 roc_results_np_HGOSC_benignrss<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
   roc(response = HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2, predictor = HGSOC_BENIGN_RSS_DF[[col]])})
 names(roc_results_np_HGOSC_benignrss) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
@@ -802,6 +805,7 @@ ENDO_BENIGN_DF2<- LAVAGE_df %>%
 ENDO_BENIGN_DF2$TYPE_BENIGN2 <- factor(ENDO_BENIGN_DF2$TYPE_BENIGN2)
 ENDO_BENIGN_DF2$TYPE_BENIGN2 <- droplevels(ENDO_BENIGN_DF2$TYPE_BENIGN2) #drop unused
 ENDO_BENIGN_DF2$TYPE_BENIGN2  <- relevel(ENDO_BENIGN_DF2$TYPE_BENIGN2 , ref = "BENIGN") #set control
+table(ENDO_BENIGN_DF2$TYPE_BENIGN2 , useNA = "a")
 roc_results_np_endo_benign2<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
   roc(response = ENDO_BENIGN_DF2$TYPE_BENIGN2, predictor = ENDO_BENIGN_DF2[[col]])})
 names(roc_results_np_endo_benign2) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
@@ -902,6 +906,7 @@ OCEC_DF<- LAVAGE_df %>%
 OCEC_DF$TYPE_BENIGN3 <- factor(OCEC_DF$TYPE_BENIGN3)
 OCEC_DF$TYPE_BENIGN3 <- droplevels(OCEC_DF$TYPE_BENIGN3) #drop unused
 OCEC_DF$TYPE_BENIGN3  <- relevel(OCEC_DF$TYPE_BENIGN3 , ref = "ENDOMETRIAL CANCER") #set control
+table(OCEC_DF$TYPE_BENIGN3, useNA = "a")
 roc_results_np_OCED<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
   roc(response = OCEC_DF$TYPE_BENIGN3, predictor = OCEC_DF[[col]])})
 names(roc_results_np_OCED) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
@@ -1002,6 +1007,7 @@ OC_BEN_RSS_DF<- LAVAGE_df %>%
 OC_BEN_RSS_DF$TYPE_BENIGN3 <- factor(OC_BEN_RSS_DF$TYPE_BENIGN3)
 OC_BEN_RSS_DF$TYPE_BENIGN3 <- droplevels(OC_BEN_RSS_DF$TYPE_BENIGN3) #drop unused
 OC_BEN_RSS_DF$TYPE_BENIGN3  <- relevel(OC_BEN_RSS_DF$TYPE_BENIGN3 , ref = "BENIGN") #set control
+table(OC_BEN_RSS_DF$TYPE_BENIGN3, useNA = "a")
 roc_results_np_OC_BEN_RSS<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
   roc(response = OC_BEN_RSS_DF$TYPE_BENIGN3, predictor = OC_BEN_RSS_DF[[col]])})
 names(roc_results_np_OC_BEN_RSS) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")

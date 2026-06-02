@@ -27,6 +27,7 @@ LIQUID_DF_final <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/liquid_
 #remove cases that is NA in their type: 
 LIQUID_DF_15 <- LIQUID_DF_final %>%
   filter(!is.na(HES1_URINE))
+table(LIQUID_DF_15$TYPE, useNA = "a")
 #BOXPLOT URINE#######################################
 #URINE HGSOC vs others######################
 #urine normalcy
@@ -149,7 +150,20 @@ URINE_plot2 <- ggplot(URINE_table2, aes(x=TYPE , y=value, fill = variable)) +
   geom_jitter(aes(color = TYPE ), size=1, alpha=0.5) +
   ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
   facet_wrap(.~ variable, nrow = 2, scales = "free") +
-  add_pvalue(each.vs.ref_sig1_g, label = "p.adj") + #pvalue
+  facet_wrap(
+    .~ variable,
+    nrow = 2,
+    scales = "free",
+    labeller = labeller(
+      variable = c(
+        "CTNNB1_URINE" = "CTNNB1 expression in urine",
+        "DLL1_URINE" = "DLL1 expression in urine",
+        "HES1_URINE" = "HES1 expression in urine",
+        "NOTCH2_URINE" = "NOTCH2 expression in urine"
+      )
+    )
+  ) +
+  add_pvalue(each.vs.ref_sig1_g, label = "p.adj") +
   theme_minimal()+
   theme(
     strip.text.x = element_text(
@@ -166,9 +180,9 @@ URINE_plot2 <- ggplot(URINE_table2, aes(x=TYPE , y=value, fill = variable)) +
 
 URINE_plot2
 #save hes1, 14 cases boxplot
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/14_urine_20260512.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/14_urine_20260521.png",
        plot = URINE_plot2,
-       width = 12,
+       width = 15,
        height = 16,
        units = "cm",
        dpi = 400)
@@ -440,8 +454,8 @@ results_URINE_15<- data.frame(
 )
 results_URINE_15
 #change names
-rownames(results_URINE_15) <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
-results_URINE_15$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+rownames(results_URINE_15) <- c("NOTCH2", "CTNNB1", "DLL1", "HES1")
+results_URINE_15$Predictor <- c("NOTCH2", "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_URINE_15 <- results_URINE_15 %>%
   gt() %>%
@@ -487,7 +501,7 @@ combinedOC_urine <- image_append(c(roc_imageOC_urine, table_imageOC_urine), stac
 
 # save
 image_write(combinedOC_urine,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/urine_OC_other_ROCcombined_20260512.png")
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/urine_OC_other_ROCcombined_20260521.png")
 
 #SURVIVAL###################################
 #make df of only cases with survival
@@ -519,26 +533,39 @@ summary(cox_model_DLL1_urine)
 cox_model_HES1_urine <- coxph(Surv(OS, STATUS) ~ HES1_URINE_f, data = ALL_SURV_LIQUID)
 summary(cox_model_HES1_urine) 
 ## PLOTS KM URINE#################
-u_ctnnb1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1_URINE_f, data = ALL_SURV_LIQUID), 
+#ctnnb1
+ALL_SURV_LIQUID$CTNNB1 <- ALL_SURV_LIQUID$CTNNB1_URINE_f
+u_ctnnb1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1, data = ALL_SURV_LIQUID), 
                        data = ALL_SURV_LIQUID, pval = F,
+                       xlab = "Time (months)",
+                       palette = c(  "#E64164", "#002060"),  
                        title =expression( "Overall survival by " * italic("CTNNB1") * " expression in urine"))
 u_ctnnb1$plot <- u_ctnnb1$plot + labs(subtitle = "p = 0.3")
 print(u_ctnnb1)
-
-u_notch2 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ NOTCH2_URINE_f, data = ALL_SURV_LIQUID), 
+#notch2
+ALL_SURV_LIQUID$NOTCH2 <- ALL_SURV_LIQUID$NOTCH2_URINE_f
+u_notch2 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ NOTCH2, data = ALL_SURV_LIQUID), 
                        data = ALL_SURV_LIQUID, pval = F,
+                       xlab = "Time (months)",
+                       palette = c(  "#E64164", "#002060"), 
                        title =expression( "Overall survival by " * italic("NOTCH2") * " expression in urine"))
 u_notch2$plot <- u_notch2$plot + labs(subtitle = "p = 0.4")
 print(u_notch2)
-
-u_dll1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ DLL1_URINE_f, data = ALL_SURV_LIQUID), 
+#DLL1
+ALL_SURV_LIQUID$DLL1 <- ALL_SURV_LIQUID$DLL1_URINE_f
+u_dll1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ DLL1, data = ALL_SURV_LIQUID), 
                      data = ALL_SURV_LIQUID, pval = F,
+                     xlab = "Time (months)",
+                     palette = c(  "#E64164", "#002060"), 
                      title =expression( "Overall survival by " * italic("DLL1") * " expression in urine"))
 u_dll1$plot <- u_dll1$plot + labs(subtitle = "p = 1.00")
 print(u_dll1)
-
-u_hes1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1_URINE_f, data = ALL_SURV_LIQUID), 
+#HES1
+ALL_SURV_LIQUID$HES1<- ALL_SURV_LIQUID$HES1_URINE_f
+u_hes1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1, data = ALL_SURV_LIQUID), 
                      data = ALL_SURV_LIQUID, pval = F,
+                     xlab = "Time (months)",
+                     palette = c(  "#E64164", "#002060"), 
                      title =expression( "Overall survival by " * italic("HES1") * " expression in urine"))
 u_hes1$plot <- u_hes1$plot + labs(subtitle = "p = 0.96")
 print(u_hes1)
@@ -548,11 +575,11 @@ combined_plot_u <-
   (u_ctnnb1$plot |u_dll1 )
 
 ggsave(
-  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_URINE_survival_combined2026013.png",
+  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_URINE_survival_combined20260521.png",
   plot = combined_plot_u,
   width = 12,
-  height = 10,
-  dpi = 300
+  height = 8,
+  dpi = 400
 )
 
 ##SURVIVAL PLASMA##########################################
@@ -592,37 +619,42 @@ summary(fit_all)$table #not reached
 
 ##Plots KM PLASMA##########################
 ## Fit survival curves PLASMA
+ALL_SURV_LIQUID_P <- ALL_SURV_LIQUID <- LIQUID_DF_15 %>%
+  filter(!is.na(OS), !is.na(STATUS)) #58 observations
 #NOTCH2
-ALL_SURV_LIQUID$NOTCH2_P <- factor(
-  ALL_SURV_LIQUID$NOTCH2_P,
+ALL_SURV_LIQUID_P$NOTCH2 <- factor(
+  ALL_SURV_LIQUID_P$NOTCH2_P,
   levels = c(0, 1),
   labels = c("no expression", "expression")
 )
-p_notch2 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ NOTCH2_P, data = ALL_SURV_LIQUID), 
-                       data = ALL_SURV_LIQUID, pval = F,
+p_notch2 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ NOTCH2, data = ALL_SURV_LIQUID_P), 
+                       data = ALL_SURV_LIQUID_P, pval = F,xlab = "Time (months)",
+                       palette = c( "#002060", "#E64164"), 
                        title =expression( "Overall survival by " * italic("NOTCH2") * " expression in plasma"))
 p_notch2$plot <- p_notch2$plot + labs(subtitle = "Log-rank  p = 0.7")
 print(p_notch2)
 #HES1
-ALL_SURV_LIQUID$HES1_P <- factor(
-  ALL_SURV_LIQUID$HES1_P,
+ALL_SURV_LIQUID_P$HES1 <- factor(
+  ALL_SURV_LIQUID_P$HES1_P,
   levels = c(0, 1),
   labels = c("no expression", "expression")
 )
-p_hes1 <-ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1_P, data = ALL_SURV_LIQUID), 
-                    data = ALL_SURV_LIQUID, pval = F,
+p_hes1 <-ggsurvplot(survfit(Surv(OS, STATUS) ~ HES1, data = ALL_SURV_LIQUID_P), 
+                    data = ALL_SURV_LIQUID_P, pval = F,xlab = "Time (months)",
+                    palette = c( "#002060", "#E64164"), 
                     title =expression( "Overall survival by " * italic("HES1") * " expression in plasma"))
 p_hes1$plot <- p_hes1$plot + labs(subtitle = "Log-rank  p = 0.016")
 print(p_hes1)
 #DLL1 - not enough data
 #CTNNB1
-ALL_SURV_LIQUID$CTNNB1_P <- factor(
-  ALL_SURV_LIQUID$CTNNB1_P,
+ALL_SURV_LIQUID_P$CTNNB1 <- factor(
+  ALL_SURV_LIQUID_P$CTNNB1_P,
   levels = c(0, 1),
   labels = c("no expression", "expression")
 )
-p_ctnnb1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1_P, data = ALL_SURV_LIQUID), 
-                       data = ALL_SURV_LIQUID, pval = F,
+p_ctnnb1 <- ggsurvplot(survfit(Surv(OS, STATUS) ~ CTNNB1, data = ALL_SURV_LIQUID_P), 
+                       data = ALL_SURV_LIQUID_P, pval = F,xlab = "Time (months)",
+                       palette = c( "#002060", "#E64164"), 
                        title =expression( "Overall survival by " * italic("CTNNB1") * " expression in plasma"))
 
 p_ctnnb1$plot <- p_ctnnb1$plot + labs(subtitle = "p = 0.45")
@@ -632,14 +664,14 @@ combined_plot <-
   p_hes1$plot /  p_notch2$plot / p_ctnnb1$plot 
 
 ggsave(
-  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_PLASMA_survival_combined2026013.png",
+  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_PLASMA_survival_combined2026021.png",
   plot = combined_plot,
   width = 6,
-  height = 12,
+  height = 10,
   dpi = 300
 )
 
-#CLINICALS?##############################
+S#CLINICALS?##############################
 table(LIQUID_DF_15$Grade_simple, useNA = "a") #g1 only 2 cases
 table(LIQUID_DF_15$Stage_simple, useNA = "a") #g1 only 2 cases
 

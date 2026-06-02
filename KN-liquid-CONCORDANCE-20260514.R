@@ -45,7 +45,7 @@ cor.test(tumor_df$HES1_NP, tumor_df$HES1_TUMOR, method = "pearson")#0.04355
 cor.test(tumor_df$NOTCH2_NP, tumor_df$NOTCH2_TUMOR, method = "pearson")#0.3259
 cor.test(tumor_df$CTNNB1_NP, tumor_df$CTNNB1_TUMOR, method = "spearman")#0.9877
 cor.test(tumor_df$DLL1_NP, tumor_df$DLL1_TUMOR, method = "pearson")#0.2198
-
+table(tumor_df$TYPE, useNA = "a")
 # genes
 genes <- c("CTNNB1", "HES1", "DLL1", "NOTCH2")
 
@@ -81,7 +81,7 @@ make_corr_plot <- function(gene, df) {
   
   label_text <- ifelse(
     method == "spearman",
-    paste0("rho = ", r_val, "\n",
+    paste0("\u03C1 = ", r_val, "\n",
            "p = ", p_val),
     paste0("r = ", r_val, "\n",
            "p = ", p_val)
@@ -136,7 +136,7 @@ combined_plot
 
 #save
 ggsave(
-  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/np_tumor_corr_combined2026014.png",
+  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/np_tumor_corr_combined2026021.png",
   plot = combined_plot,
   width = 8,
   height =8,

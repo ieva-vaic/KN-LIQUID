@@ -208,7 +208,7 @@ roc_plot_ENDO <- function() {
   par(pty = "s") #sets square
   plot.roc(roc_results_np_endo_benign2[["NOTCH2_NP"]], print.auc = F, col = "#E64164",
            cex.main=0.8, 
-           main ="Uterine lavage biomarkers EC vs Non-cancer samples",
+           main ="Uterine lavage biomarkers EC vs benign samples",
            #xlab = "1 - Specifiškumas", 
            #ylab = "Jautrumas", 
            legacy.axes = T) #title
@@ -241,13 +241,13 @@ results_np_endo_benign2<- data.frame(
 )
 results_np_endo_benign2
 #change names
-results_np_endo_benign2$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_endo_benign2$Predictor <- c("NOTCH2", "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_endo_ben2 <- results_np_endo_benign2 %>%
   gt() %>%
   tab_header(
     title = "ROC measures for uterine lavage biomarkers", 
-    subtitle = "Non-cancer vs endometrial cancer") %>%
+    subtitle = "Benign vs endometrial cancer") %>%
   fmt_number(
     columns = everything(),
     decimals = 3
@@ -259,7 +259,7 @@ gt_table_np_endo_ben2 <- results_np_endo_benign2 %>%
 #show
 gt_table_np_endo_ben2
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROC_20260519esgh.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROC_20260525esgh.png",
     width = 11, height = 11, res = 300, units = "cm")
 roc_plot_ENDO()
 mtext(
@@ -275,7 +275,7 @@ dev.off()
 gtsave(gt_table_np_endo_ben2,vwidth = 10000,   
        filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCtable_20260519esgh.png")
 #import images
-roc_image4rss  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROC_20260519esgh.png")
+roc_image4rss  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROC_20260525esgh.png")
 table_image4rss <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCtable_20260519esgh.png")
 
 # resize table to match ROC image width
@@ -286,7 +286,7 @@ combined4rss <- image_append(c(roc_image4rss, table_image4rss), stack = TRUE)
 
 # save
 image_write(combined4rss,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCcombined_20260519esgh.png")
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCcombined_20260525esgh.png")
 
 ##ROC ENDOMETRIAL VS HGSOC########################################
 #make ENDOMETRIAL VS HGSOC /RSS DF
@@ -345,7 +345,7 @@ results_np_endo_hgsoc<- data.frame(
 )
 results_np_endo_hgsoc
 #change names
-results_np_endo_hgsoc$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_endo_hgsoc$Predictor <- c("NOTCH2", "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_endo_HGSOC <- results_np_endo_hgsoc %>%
   gt() %>%
@@ -390,7 +390,7 @@ combined <- image_append(c(roc_image, table_image), stack = TRUE)
 
 # save
 image_write(combined,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_hgsoc_ROCcombined_20260519esgh.png")
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_hgsoc_ROCcombined_20260525esgh.png")
 ##ROC HGSOC VS BENIGN RSS ##########################
 #make hgsoc VS BENIGN and RSS DF
 HGSOC_BENIGN_RSS_DF<- LAVAGE_df %>%
@@ -412,7 +412,7 @@ roc_plot3rss <- function() {
   par(pty = "s") #sets square
   plot.roc(roc_results_np_HGOSC_benignrss[["NOTCH2_NP"]], print.auc = F, col = "#E64164",
            cex.main=0.8, 
-           main ="Uterine lavage biomarkers HGSOC vs Non-cancer samples",
+           main ="Uterine lavage biomarkers HGSOC vs benign samples",
            #xlab = "1 - Specifiškumas", 
            #ylab = "Jautrumas", 
            legacy.axes = T) #title
@@ -445,13 +445,13 @@ results_np_HGSOC_benignrss<- data.frame(
 )
 results_np_HGSOC_benignrss
 #lithuanize it 
-results_np_HGSOC_benignrss$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_HGSOC_benignrss$Predictor <- c("NOTCH2", "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_HGSOC_benrss <- results_np_HGSOC_benignrss %>%
   gt() %>%
   tab_header(
     title = "ROC measures for uterine lavage biomarkers", 
-    subtitle = "Non-cancer vs HGSOC") %>%
+    subtitle = "Benign vs HGSOC") %>%
   fmt_number(
     columns = everything(),
     decimals = 3
@@ -464,7 +464,7 @@ gt_table_np_HGSOC_benrss <- results_np_HGSOC_benignrss %>%
 gt_table_np_HGSOC_benrss
 #save plot
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROC20260519esgh.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROC20260525esgh.png",
     width = 11, height = 11, res = 300, units = "cm")
 roc_plot3rss()
 mtext(
@@ -480,7 +480,7 @@ dev.off()
 gtsave(gt_table_np_HGSOC_benrss,vwidth = 10000,   
        filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCtable20260519esgh.png")
 #import images
-roc_image3rss  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROC20260519esgh.png")
+roc_image3rss  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROC20260525esgh.png")
 table_image3rss <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCtable20260519esgh.png")
 
 # resize table to match ROC image width
@@ -491,7 +491,7 @@ combined3rss <- image_append(c(roc_image3rss, table_image3rss), stack = TRUE)
 
 # save
 image_write(combined3rss,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCcombined20260519esgh.png")
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCcombined20260525esgh.png")
 
 
 #15 CASE DF##################################
@@ -888,6 +888,7 @@ col_fun <- c("expression" = "#F2A7B5", "no expression" = "#7C8DB5", "NA" ="grey"
 heatmap_plasma <- Heatmap(as.matrix(plasma_only), 
                           col = col_fun, name = "Gene expression status in plasma",
                           cluster_rows = FALSE,
+                          column_names_gp = gpar(fontface = "italic"),
                           row_split = clinical$TYPE
 )
 heatmap_plasma
@@ -896,7 +897,7 @@ heatmap_plasma
 main_plot <- heatmap_plasma + heatmap_raiska
 main_plot
 
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/all_liquid_heatmap20260519esgh.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/all_liquid_heatmap20260526esgh.png",
     width = 2500, height = 2800, res = 300)
 main_plot
 dev.off()
