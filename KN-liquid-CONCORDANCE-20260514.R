@@ -143,6 +143,40 @@ ggsave(
   dpi = 300
 )
 ##Bland-altman plot############################
+genes <- c("CTNNB1", "HES1", "DLL1", "NOTCH2")
+
+# ---- reshape ----
+long_df <- bind_rows(lapply(genes, function(g) {
+  
+  tumor_col <- paste0(g, "_TUMOR")
+  np_col    <- paste0(g, "_NP")
+  
+  data.frame(
+    gene = g,
+    mean_val = (tumor_df[[tumor_col]] + tumor_df[[np_col]]) / 2,
+    diff_val = (tumor_df[[tumor_col]] - tumor_df[[np_col]])
+  )
+}))
+
+# ---- stats ----
+stats <- long_df %>%
+  group_by(gene) %>%
+  summarise(
+    bias = mean(diff_val, na.rm = TRUE),
+    sd = sd(diff_val, na.rm = TRUE),
+    loa_upper = bias + 1.96 * sd,
+    loa_lower = bias - 1.96 * sd
+  ) %>%
+  mutate(
+    label = paste0(
+      "bias = ", round(bias, 2), "\n",
+      "+1.96 SD = ", round(loa_upper, 2), "\n",
+      "-1.96 SD = ", round(loa_lower, 2)
+    )
+  )
+
+plot_df <- long_df %>%
+  left_join(stats, by = "gene")
 blad_p <- ggplot(plot_df, aes(x = mean_val, y = diff_val)) +
   geom_point(alpha = 0.6) +
   

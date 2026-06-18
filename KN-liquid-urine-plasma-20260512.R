@@ -21,6 +21,7 @@ library(magick)
 library(coin)
 library(patchwork)
 library(effectsize)
+library(scales)
 #read RDS
 LIQUID_DF_final <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/liquid_20260415.RDS")
 #leave URINE/PLASMA only
@@ -329,7 +330,7 @@ notch2_bar <- ggplot(df_notch2, aes(x = TYPE, y = prop, fill = NOTCH2)) +
     legend.position = "top"
   )
 notch2_bar
-#save ctnnb1 barplot plasma
+#save notch2 barplot plasma
 ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/notxh2_plasma_20260512.png",
        plot = notch2_bar,
        width = 14,
@@ -386,7 +387,7 @@ hes1_bar <- ggplot(df_hes1, aes(x = TYPE, y = prop, fill = HES1)) +
     legend.position = "top"
   )
 hes1_bar
-#save ctnnb1 barplot plasma
+#save hes1 barplot plasma
 ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/hes1_plasma_20260512.png",
        plot = hes1_bar,
        width = 14,
@@ -582,6 +583,18 @@ ggsave(
   dpi = 400
 )
 
+#no dll1
+combined_plot_u3 <-
+  u_hes1$plot/  u_notch2$plot /u_ctnnb1$plot 
+combined_plot_u3
+
+ggsave(
+  filename = "c:/Users/Ieva/rprojects/outputs_all/LIQUID/OC_URINE_survival_3genes_combined20260618.png",
+  plot = combined_plot_u3,
+  width = 6,
+  height = 12,
+  dpi = 600
+)
 ##SURVIVAL PLASMA##########################################
 #plasma cases
 table(ALL_SURV_LIQUID$STATUS)
@@ -671,7 +684,7 @@ ggsave(
   dpi = 300
 )
 
-S#CLINICALS?##############################
+#CLINICALS?##############################
 table(LIQUID_DF_15$Grade_simple, useNA = "a") #g1 only 2 cases
 table(LIQUID_DF_15$Stage_simple, useNA = "a") #g1 only 2 cases
 

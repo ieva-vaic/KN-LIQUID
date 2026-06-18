@@ -25,6 +25,9 @@ LIQUID_DF_final <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/liquid_
 LAVAGE_df <- LIQUID_DF_final%>%
   filter(!is.na(NOTCH2_NP)) #103 cases
 
+#fix RSS to RRS
+levels(LAVAGE_df$TYPE)[levels(LAVAGE_df$TYPE) == "RSS"] <- "RRS"
+
 #NP GENE COMPARISONS BETWEEN ALL GROUPS################################
 ##test normalcy NP ###########################
 DATA <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP" )
@@ -74,16 +77,16 @@ summary(anova_ctnnb1) #significant
 TukeyHSD(anova_ctnnb1) #significant: 
 #ENDOMETRIAL CANCER-BENIGN p.adj = 0.0012000, 
 #HGSOC-ENDOMETRIAL CANCER p.adj = 0.0015951, 
-#RSS-ENDOMETRIAL CANCER p.adj = 0.0003289
+#RRS-ENDOMETRIAL CANCER p.adj = 0.0003289
 
 #ANOVA (for normal data) - DLL1 
 anova_dll1 <- aov(DLL1_NP ~ TYPE, data = LAVAGE_df)
 summary(anova_dll1) #significant
-TukeyHSD(anova_dll1) #significant: RSS-ENDOMETRIAL CANCER p.adj = 0.0015694
+TukeyHSD(anova_dll1) #significant: RRS-ENDOMETRIAL CANCER p.adj = 0.0015694
 #significant:
 #ENDOMETRIAL CANCER-BENIGN p = 0.0104,
 #HGSOC-ENDOMETRIAL CANCER p = 0.0017,         
-#RSS-ENDOMETRIAL CANCER p = 0.0092      
+#RRS-ENDOMETRIAL CANCER p = 0.0092      
 
 #ANOVA (for not normal data) - HES1
 kruskal.test(HES1_NP ~ TYPE, data = LAVAGE_df) #significant
@@ -101,13 +104,13 @@ pairwise.wilcox.test(LAVAGE_df$NOTCH2_NP, LAVAGE_df$TYPE,
                      p.adjust.method = "bonferroni")
 #siginifcant: BENIGN -ENDOMETRIAL CANCER p = 0.0104  
 #siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.0017    
-#siginifcant: RSS-ENDOMETRIAL CANCER p = 0.0092   
+#siginifcant: RRS-ENDOMETRIAL CANCER p = 0.0092   
 dunnTest(NOTCH2_NP ~ TYPE,
          data = LAVAGE_df,
          method = "bonferroni")
 #significant: BENIGN - ENDOMETRIAL CANCER p = 0.027194259
 #siginifcant: HGSOC-ENDOMETRIAL CANCER p = 0.001706016
-#siginifcant: RSS-ENDOMETRIAL CANCER p = 00.007731407
+#siginifcant: RRS-ENDOMETRIAL CANCER p = 00.007731407
 ##boxplot full np ##########################################
 table(LAVAGE_df$TYPE, useNA = "a")
 #melt table for expression
@@ -122,11 +125,11 @@ each.vs.ref_sig <- tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
   "EC",   "BENIGN", 0.002, -2, "CTNNB1_NP",
   "EC",   "HGSOC", 0.003, -1, "CTNNB1_NP",
-  "EC",   "RSS", 0.001, -1.5, "CTNNB1_NP",
-  "EC",   "RSS", 0.002, -6, "DLL1_NP",
+  "EC",   "RRS", 0.001, -1.5, "CTNNB1_NP",
+  "EC",   "RRS", 0.002, -6, "DLL1_NP",
   "EC",   "BENIGN", 0.027, -2, "NOTCH2_NP",#dunn
   "EC",   "HGSOC", 0.002, -1, "NOTCH2_NP",#dunn
-  "EC",   "RSS", 0.008, -1.5, "NOTCH2_NP",#dunn
+  "EC",   "RRS", 0.008, -1.5, "NOTCH2_NP",#dunn
   "EC",   "HGSOC", 0.024, -2, "HES1_NP"#dunn
 )
 
@@ -159,37 +162,37 @@ TYPE_FULL_plot <- ggplot(GroupNP_table, aes(x=TYPE , y=value, fill = variable)) 
   "OTHER OC" = "#4DBBD5",
   "BENIGN" = "#00A087",
   "HGSOC" = "#3C5488",
-  "RSS" = "#B7E4C7"
+  "RRS" = "#B7E4C7"
   )) +
   scale_color_manual(values = c(
     "EC" = "#E64B35",
     "OTHER OC" = "#4DBBD5",
     "BENIGN" = "#00A087",
     "HGSOC" = "#3C5488",
-    "RSS" = "#B7E4C7"
+    "RRS" = "#B7E4C7"
   ))
 
 TYPE_FULL_plot
 #save
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_FULL_20260511.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_FULL_20260619.png",
        plot = TYPE_FULL_plot,
        width = 18,
        height = 16,
        units = "cm",
        dpi = 400)
 
-#RSS+BENING grouped NP #################################################
+#RRS+BENING grouped NP #################################################
 table(LAVAGE_df$TYPE, useNA = "a") #assess the situation
-#create a new grouping where RSS and BENIGN is one
+#create a new grouping where RRS and BENIGN is one
 LAVAGE_df <- LAVAGE_df %>%
   mutate(
-    TYPE_BENIGN2 = if_else(TYPE %in% c("RSS", "BENIGN"),
+    TYPE_BENIGN2 = if_else(TYPE %in% c("RRS", "BENIGN"),
                            "BENIGN",
                            TYPE)
   )
 table(LAVAGE_df$TYPE_BENIGN2, useNA = "a") #now 31 benign
 
-##test normalcy of my variables, RSS+BENIGN#####################################
+##test normalcy of my variables, RRS+BENIGN#####################################
 results_normalcy2 <- lapply(DATA, function(v) {
   by(LAVAGE_df[[v]], LAVAGE_df$TYPE_BENIGN2, function(x) {
     if (length(na.omit(x)) >= 3)
@@ -200,7 +203,7 @@ results_normalcy2 <- lapply(DATA, function(v) {
 names(results_normalcy2) <- DATA
 results_normalcy2 #Not normal NP NOTCH2 endometrial cancer p = 0.01915093
 
-##test variance RSS+BENIGN###############################
+##test variance RRS+BENIGN###############################
 # Loop through all variables in DATA_names
 variance_results2 <- lapply(DATA, function(v) {
   # Select variable and TYPE
@@ -230,7 +233,7 @@ variance_results2 <- bind_rows(variance_results2)
 # View the results
 variance_results2 #all equal
 
-##ANOVA, RSS+BENIGN###########################
+##ANOVA, RRS+BENIGN###########################
 #ANOVA (for normal data) - CTNNB1, DLL1 and HES1
 # CTNNB1
 anova_ctnnb1_BENIGN2 <- aov(CTNNB1_NP ~ TYPE_BENIGN2, data = LAVAGE_df)
@@ -260,7 +263,7 @@ dunnTest(NOTCH2_NP ~ TYPE_BENIGN2,
 #significant: BENING-ENDOMETRIAL CANCER 0.002364269,
 ##HGSOC-ENDOMETRIAL CANCER 0.001023609,
 ##OTHER-ENDOMETRIAL CANCER   0.154074655 #not significant anymore
-##boxplot full np, RSS+BENIGN ###########################
+##boxplot full np, RRS+BENIGN ###########################
 #melt table for expression
 GroupNP_table_BENIGN2 <- melt(LAVAGE_df[, c(38,15:18)], id.vars="TYPE_BENIGN2",
                               measure.vars=c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"))
@@ -269,24 +272,24 @@ GroupNP_table_BENIGN2 <- GroupNP_table_BENIGN2 %>%
   mutate(TYPE_BENIGN2 = dplyr::recode(TYPE_BENIGN2,
                               "ENDOMETRIAL CANCER" = "EC",
                               "OTHER" = "OTHER OC",
-                              "BENIGN" = "BENIGN + RSS"))
-#make p values RSS+benign
+                              "BENIGN" = "BENIGN + RRS"))
+#make p values RRS+benign
 each.vs.ref_sig_BENIGN2 <- tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-  "EC",   "BENIGN + RSS", 0.001, -2, "CTNNB1_NP",#
+  "EC",   "BENIGN + RRS", 0.001, -2, "CTNNB1_NP",#
   "EC",   "HGSOC", 0.001, -1, "CTNNB1_NP",#
-  "EC",   "BENIGN + RSS", 0.002 , -2, "NOTCH2_NP",#dunn
+  "EC",   "BENIGN + RRS", 0.002 , -2, "NOTCH2_NP",#dunn
   "EC",   "HGSOC", 0.001, -1, "NOTCH2_NP",#dunn
 #  "EC",   "OTHER OC", 0.04504, -1.5, "NOTCH2_NP",#wilcox, dunn not significant after adj
   "EC",   "HGSOC", 0.014, -2, "HES1_NP",#
-  "BENIGN + RSS",   "HGSOC", 0.034, -1.5, "HES1_NP",#
+  "BENIGN + RRS",   "HGSOC", 0.034, -1.5, "HES1_NP",#
   "EC",   "HGSOC", 0.047, -6, "DLL1_NP",#
-  "EC",   "BENIGN + RSS", 0.003, -7, "DLL1_NP"#
+  "EC",   "BENIGN + RRS", 0.003, -7, "DLL1_NP"#
 )
 
-#make figure RSS+benign
+#make figure RRS+benign
 
-TYPE_RSS_BENIGN_plot <- ggplot(GroupNP_table_BENIGN2, aes(x=TYPE_BENIGN2 , y=value, fill = variable)) +
+TYPE_RRS_BENIGN_plot <- ggplot(GroupNP_table_BENIGN2, aes(x=TYPE_BENIGN2 , y=value, fill = variable)) +
   geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = TYPE_BENIGN2 )) +
   geom_jitter(aes(color = TYPE_BENIGN2 ), size=1, alpha=0.5) +
   ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
@@ -313,20 +316,20 @@ TYPE_RSS_BENIGN_plot <- ggplot(GroupNP_table_BENIGN2, aes(x=TYPE_BENIGN2 , y=val
   scale_fill_manual(values = c(
     "EC" = "#E64B35",
     "OTHER OC" = "#4DBBD5",
-    "BENIGN + RSS" = "#00A087",
+    "BENIGN + RRS" = "#00A087",
     "HGSOC" = "#3C5488"
   )) +
   scale_color_manual(values = c(
     "EC" = "#E64B35",
     "OTHER OC" = "#4DBBD5",
-    "BENIGN + RSS" = "#00A087",
+    "BENIGN + RRS" = "#00A087",
     "HGSOC" = "#3C5488"
   ))
 
-TYPE_RSS_BENIGN_plot
-#save RSS+benign
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_20260511.png",
-       plot = TYPE_RSS_BENIGN_plot,
+TYPE_RRS_BENIGN_plot
+#save RRS+benign
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RRS_BEN_20260619.png",
+       plot = TYPE_RRS_BENIGN_plot,
        width = 18,
        height = 16,
        units = "cm",
@@ -334,7 +337,7 @@ ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_20260511.png",
 
 #HGSOC+OTHER grouped NP #################################################
 table(LAVAGE_df$TYPE_BENIGN2, useNA = "a") #assess the situation
-#create a new grouping where RSS and BENIGN is one
+#create a new grouping where RRS and BENIGN is one
 LAVAGE_df <- LAVAGE_df %>%
   mutate(
     TYPE_BENIGN3 = if_else(TYPE_BENIGN2 %in% c("HGSOC", "OTHER"),
@@ -425,22 +428,22 @@ GroupNP_table_BENIGN3 <- melt(LAVAGE_df[, c(39,15:18)], id.vars="TYPE_BENIGN3",
 GroupNP_table_BENIGN3 <- GroupNP_table_BENIGN3 %>%
   mutate(TYPE_BENIGN3 = dplyr::recode(TYPE_BENIGN3,
                                       "ENDOMETRIAL CANCER" = "EC",
-                                      "BENIGN" = "BENIGN + RSS"))
-#make p values RSS+benign
+                                      "BENIGN" = "BENIGN + RRS"))
+#make p values RRS+benign
 each.vs.ref_sig_BENIGN3 <- tibble::tribble(
   ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
-  "EC",   "BENIGN + RSS", 0.007, -5, "DLL1_NP",#
+  "EC",   "BENIGN + RRS", 0.007, -5, "DLL1_NP",#
   "EC",   "OC", 0.028, -4, "DLL1_NP",#
   "EC",   "OC", 0.007, -2, "HES1_NP",#
-  "BENIGN + RSS",   "OC", 0.016, -1, "HES1_NP",#
+  "BENIGN + RRS",   "OC", 0.016, -1, "HES1_NP",#
   "EC",   "OC", 0.001, -2, "NOTCH2_NP",#dunn
-  "EC",   "BENIGN + RSS", 0.001 , -3, "NOTCH2_NP",#dunn
-  "EC",   "BENIGN + RSS", 0.002 , -2, "CTNNB1_NP",#dunn
+  "EC",   "BENIGN + RRS", 0.001 , -3, "NOTCH2_NP",#dunn
+  "EC",   "BENIGN + RRS", 0.002 , -2, "CTNNB1_NP",#dunn
   "EC",   "OC", 0.043, -1, "CTNNB1_NP"#dunn
 )
-#make figure RSS+benign
+#make figure RRS+benign
 
-TYPE_RSS_BENIGN_plot3 <- ggplot(GroupNP_table_BENIGN3, aes(x=TYPE_BENIGN3 , y=value, fill = variable)) +
+TYPE_RRS_BENIGN_plot3 <- ggplot(GroupNP_table_BENIGN3, aes(x=TYPE_BENIGN3 , y=value, fill = variable)) +
   geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = TYPE_BENIGN3 )) +
   geom_jitter(aes(color = TYPE_BENIGN3 ), size=1, alpha=0.5) +
   ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
@@ -466,19 +469,19 @@ TYPE_RSS_BENIGN_plot3 <- ggplot(GroupNP_table_BENIGN3, aes(x=TYPE_BENIGN3 , y=va
     gsub("-", "\u2212", as.character(x)))+
   scale_fill_manual(values = c(
     "EC" = "#E64B35",
-    "BENIGN + RSS" = "#00A087",
+    "BENIGN + RRS" = "#00A087",
     "OC" = "#3C5488"
   )) +
   scale_color_manual(values = c(
     "EC" = "#E64B35",
-    "BENIGN + RSS" = "#00A087",
+    "BENIGN + RRS" = "#00A087",
     "OC" = "#3C5488"
   ))
 
-TYPE_RSS_BENIGN_plot3
-#save RSS+benign
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RSS_BEN_HGSOC_OTHER_20260511.png",
-       plot = TYPE_RSS_BENIGN_plot3,
+TYPE_RRS_BENIGN_plot3
+#save RRS+benign
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_RRS_BEN_HGSOC_OTHER_20260619.png",
+       plot = TYPE_RRS_BENIGN_plot3,
        width = 18,
        height = 16,
        units = "cm",
@@ -538,7 +541,8 @@ results_np_HGSOC_benign<- data.frame(
 )
 results_np_HGSOC_benign
 #change names to remove _np
-results_np_HGSOC_benign$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_HGSOC_benign$Predictor <- c("NOTCH2", #fixed
+                                       "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_HGSOC_ben <- results_np_HGSOC_benign %>%
   gt() %>%
@@ -558,7 +562,7 @@ gt_table_np_HGSOC_ben
 
 #save plot
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROC_20260507.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROC_20260618.png",
     width = 10, height = 10, res = 300, units = "cm")
 roc_plot3()
 mtext(
@@ -570,12 +574,12 @@ mtext(
   font = 2
 )
 dev.off()
-#there is no other convieneat way to save gt outputs
+#there is no other convenient way to save gt outputs
 gtsave(gt_table_np_HGSOC_ben,vwidth = 10000,   
-       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROCtable_20260507.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROCtable_20260618.png")
 #import images
-roc_image2   <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROC_20260507.png")
-table_image2 <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROCtable_20260507.png")
+roc_image2   <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROC_20260618.png")
+table_image2 <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROCtable_20260618.png")
 
 # resize table to match ROC image width
 table_image2 <- image_resize(table_image2,
@@ -590,7 +594,7 @@ combined <- image_append(c(roc_image2, table_image2), stack = TRUE)
 
 # save
 image_write(combined,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROCcombined_20260507.png")
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGN_ROCcombined_20260618.png")
 ##ROC EC VS BENIGN ########################################
 #make EC VS BENIGN DF
 EC_BENIGN_DF<- LAVAGE_df %>%
@@ -646,7 +650,8 @@ results_np_EC_benign<- data.frame(
 )
 results_np_EC_benign
 #change names to remove _np
-results_np_EC_benign$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_EC_benign$Predictor <- c("NOTCH2", #fixed
+                                    "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_EC_ben <- results_np_EC_benign %>%
   gt() %>%
@@ -666,7 +671,7 @@ gt_table_np_EC_ben
 
 #save plot
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROC_20260507.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROC_20260618.png",
     width = 10, height = 10, res = 300, units = "cm")
 roc_plot2()
 mtext(
@@ -680,10 +685,10 @@ mtext(
 dev.off()
 #there is no other convieneat way to save gt outputs
 gtsave(gt_table_np_EC_ben,vwidth = 10000,   
-       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROCtable_20260507.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROCtable_20260618.png")
 #import images
-roc_image3  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROC_20260507.png")
-table_image3 <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROCtable_20260507.png")
+roc_image3  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROC_20260618.png")
+table_image3 <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROCtable_20260618.png")
 
 # resize table to match ROC image width
 table_image3 <- image_resize(table_image3,
@@ -693,36 +698,36 @@ combined3 <- image_append(c(roc_image3, table_image3), stack = TRUE)
 
 # save
 image_write(combined3,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROCcombined_20260507.png")
-##ROC HGSOC VS BENIGN RSS ##########################
-#make hgsoc VS BENIGN and RSS DF
-HGSOC_BENIGN_RSS_DF<- LAVAGE_df %>%
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGN_ROCcombined_20260618.png")
+##ROC HGSOC VS BENIGN RRS ##########################
+#make hgsoc VS BENIGN and RRS DF
+HGSOC_BENIGN_RRS_DF<- LAVAGE_df %>%
   filter(TYPE_BENIGN2%in% c("BENIGN", "HGSOC"))%>% #filter for right samples
   dplyr::select("TYPE_BENIGN2", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
   )
-HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 <- factor(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2)
-HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 <- droplevels(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2) #drop unused
-HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2  <- relevel(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2 , ref = "BENIGN") #set control
-table(HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2, useNA = "a")
-roc_results_np_HGOSC_benignrss<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
-  roc(response = HGSOC_BENIGN_RSS_DF$TYPE_BENIGN2, predictor = HGSOC_BENIGN_RSS_DF[[col]])})
-names(roc_results_np_HGOSC_benignrss) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
-roc_results_np_HGOSC_benignrss
+HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2 <- factor(HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2)
+HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2 <- droplevels(HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2) #drop unused
+HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2  <- relevel(HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2 , ref = "BENIGN") #set control
+table(HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2, useNA = "a")
+roc_results_np_HGOSC_benignRRS<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
+  roc(response = HGSOC_BENIGN_RRS_DF$TYPE_BENIGN2, predictor = HGSOC_BENIGN_RRS_DF[[col]])})
+names(roc_results_np_HGOSC_benignRRS) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
+roc_results_np_HGOSC_benignRRS
 #extract the aucs
-auc_values_np_HGSOC_benignrss <- sapply(roc_results_np_HGOSC_benignrss, function(roc_obj) {auc(roc_obj)})
-auc_values_np_HGSOC_benignrss #extracted aucs
+auc_values_np_HGSOC_benignRRS <- sapply(roc_results_np_HGOSC_benignRRS, function(roc_obj) {auc(roc_obj)})
+auc_values_np_HGSOC_benignRRS #extracted aucs
 #roc figure 
-roc_plot3rss <- function() {
+roc_plot3RRS <- function() {
   par(pty = "s") #sets square
-  plot.roc(roc_results_np_HGOSC_benignrss[["NOTCH2_NP"]], print.auc = F, col = "#dcbeff",
+  plot.roc(roc_results_np_HGOSC_benignRRS[["NOTCH2_NP"]], print.auc = F, col = "#dcbeff",
            cex.main=0.8, 
            main ="Uterine lavage biomarkers HGSOC vs Non-cancer samples",
            #xlab = "1 - Specifiškumas", 
            #ylab = "Jautrumas", 
            legacy.axes = T) #title
-  lines(roc_results_np_HGOSC_benignrss[["CTNNB1_NP"]], col = "#911eb4", lwd =2) 
-  lines(roc_results_np_HGOSC_benignrss[["DLL1_NP"]], col ="#ffd8b1", lwd =2) 
-  lines(roc_results_np_HGOSC_benignrss[["HES1_NP"]], col = "#42d4f4", lwd =2) 
+  lines(roc_results_np_HGOSC_benignRRS[["CTNNB1_NP"]], col = "#911eb4", lwd =2) 
+  lines(roc_results_np_HGOSC_benignRRS[["DLL1_NP"]], col ="#ffd8b1", lwd =2) 
+  lines(roc_results_np_HGOSC_benignRRS[["HES1_NP"]], col = "#42d4f4", lwd =2) 
   legend("bottomright", legend = c( expression(italic("NOTCH2")),
                                     expression(italic("CTNNB1")),
                                     expression(italic("DLL1")), 
@@ -733,25 +738,26 @@ roc_plot3rss <- function() {
   cex = 0.7, lwd =3)
 }
 #plot
-roc_plot3rss()
+roc_plot3RRS()
 #roc table
-coords_results_np_HGSOC_benignrss<- lapply(roc_results_np_HGOSC_benignrss, function(roc_obj) {
+coords_results_np_HGSOC_benignRRS<- lapply(roc_results_np_HGOSC_benignRRS, function(roc_obj) {
   coords(roc_obj, "best", ret = c("threshold", "accuracy", "sensitivity",
                                   "specificity"),
          transpose = FALSE)
 })
-coords_results_np_HGSOC_benignrss
+coords_results_np_HGSOC_benignRRS
 #create df
-results_np_HGSOC_benignrss<- data.frame(
+results_np_HGSOC_benignRRS<- data.frame(
   Predictor = c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"),
-  AUC = auc_values_np_HGSOC_benignrss,
-  do.call(rbind,coords_results_np_HGSOC_benignrss) 
+  AUC = auc_values_np_HGSOC_benignRRS,
+  do.call(rbind,coords_results_np_HGSOC_benignRRS) 
 )
-results_np_HGSOC_benignrss
+results_np_HGSOC_benignRRS
 #lithuanize it 
-results_np_HGSOC_benignrss$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_HGSOC_benignRRS$Predictor <- c("NOTCH2",#fixed
+                                          "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
-gt_table_np_HGSOC_benrss <- results_np_HGSOC_benignrss %>%
+gt_table_np_HGSOC_benRRS <- results_np_HGSOC_benignRRS %>%
   gt() %>%
   tab_header(
     title = "ROC measures for uterine lavage biomarkers", 
@@ -765,12 +771,12 @@ gt_table_np_HGSOC_benrss <- results_np_HGSOC_benignrss %>%
     locations = cells_body(columns = vars(Predictor))
   )
 #show
-gt_table_np_HGSOC_benrss
+gt_table_np_HGSOC_benRRS
 #save plot
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROC_20260507.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRRS_ROC_20260618.png",
     width = 11, height = 11, res = 300, units = "cm")
-roc_plot3rss()
+roc_plot3RRS()
 mtext(
   "C",
   side = 3,
@@ -781,23 +787,23 @@ mtext(
 )
 dev.off()
 #there is no other convieneat way to save gt outputs
-gtsave(gt_table_np_HGSOC_benrss,vwidth = 10000,   
-       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCtable_20260507.png")
+gtsave(gt_table_np_HGSOC_benRRS,vwidth = 10000,   
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRRS_ROCtable_20260618.png")
 #import images
-roc_image3rss  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROC_20260507.png")
-table_image3rss <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCtable_20260507.png")
+roc_image3RRS  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRRS_ROC_20260618.png")
+table_image3RRS <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRRS_ROCtable_20260618.png")
 
 # resize table to match ROC image width
-table_image3rss <- image_resize(table_image3rss,
-                                paste0(image_info(roc_image3rss)$width, "x"))
+table_image3RRS <- image_resize(table_image3RRS,
+                                paste0(image_info(roc_image3RRS)$width, "x"))
 # combine vertically
-combined3rss <- image_append(c(roc_image3rss, table_image3rss), stack = TRUE)
+combined3RRS <- image_append(c(roc_image3RRS, table_image3RRS), stack = TRUE)
 
 # save
-image_write(combined3rss,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRSS_ROCcombined_20260507.png")
-##ROC ENDOMETRIAL VS BENIGN / RSS########################################
-#make ENDOMETRIAL VS BENIGN /RSS DF
+image_write(combined3RRS,
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_HGSOC_BENIGNRRS_ROCcombined_20260618.png")
+##ROC ENDOMETRIAL VS BENIGN / RRS########################################
+#make ENDOMETRIAL VS BENIGN /RRS DF
 ENDO_BENIGN_DF2<- LAVAGE_df %>%
   filter(TYPE_BENIGN2%in% c("BENIGN", "ENDOMETRIAL CANCER"))%>% #filter for right samples
   dplyr::select("TYPE_BENIGN2", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
@@ -851,7 +857,8 @@ results_np_endo_benign2<- data.frame(
 )
 results_np_endo_benign2
 #change names
-results_np_endo_benign2$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_endo_benign2$Predictor <- c("NOTCH2",#fixed
+                                       "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_endo_ben2 <- results_np_endo_benign2 %>%
   gt() %>%
@@ -869,7 +876,7 @@ gt_table_np_endo_ben2 <- results_np_endo_benign2 %>%
 #show
 gt_table_np_endo_ben2
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROC_20260507.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRRS_ROC_20260618.png",
     width = 11, height = 11, res = 300, units = "cm")
 roc_plot_ENDO()
 mtext(
@@ -883,20 +890,20 @@ mtext(
 dev.off()
 #there is no other convieneat way to save gt outputs
 gtsave(gt_table_np_endo_ben2,vwidth = 10000,   
-       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCtable_20260507.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRRS_ROCtable_20260618.png")
 #import images
-roc_image4rss  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROC_20260507.png")
-table_image4rss <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCtable_20260507.png")
+roc_image4RRS  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRRS_ROC_20260618.png")
+table_image4RRS <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRRS_ROCtable_20260618.png")
 
 # resize table to match ROC image width
-table_image4rss <- image_resize(table_image4rss,
-                                paste0(image_info(roc_image4rss)$width, "x"))
+table_image4RRS <- image_resize(table_image4RRS,
+                                paste0(image_info(roc_image4RRS)$width, "x"))
 # combine vertically
-combined4rss <- image_append(c(roc_image4rss, table_image4rss), stack = TRUE)
+combined4RRS <- image_append(c(roc_image4RRS, table_image4RRS), stack = TRUE)
 
 # save
-image_write(combined4rss,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRSS_ROCcombined_20260507.png")
+image_write(combined4RRS,
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_EC_BENIGNRRS_ROCcombined_20260618.png")
 ##ROC OC (HGSOC+OTHER) VS EC ########################################
 #make OC VS EC DF
 OCEC_DF<- LAVAGE_df %>%
@@ -952,7 +959,8 @@ results_np_OCEC<- data.frame(
 )
 results_np_OCEC
 #change names
-results_np_OCEC$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_OCEC$Predictor <- c("NOTCH2",#fixed
+                               "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
 gt_table_np_OCEC <- results_np_OCEC %>%
   gt() %>%
@@ -970,7 +978,7 @@ gt_table_np_OCEC <- results_np_OCEC %>%
 #show
 gt_table_np_OCEC
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROC_20260507.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROC_20260618.png",
     width = 11, height = 11, res = 300, units = "cm")
 roc_plot_OCEC()
 mtext(
@@ -984,10 +992,10 @@ mtext(
 dev.off()
 #there is no other convieneat way to save gt outputs
 gtsave(gt_table_np_OCEC,vwidth = 10000,   
-       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROCtable_20260507.png")
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROCtable_20260618.png")
 #import images
-roc_imageOCEC  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROC_20260507.png")
-table_imageOCEC <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROCtable_20260507.png")
+roc_imageOCEC  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROC_20260618.png")
+table_imageOCEC <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROCtable_20260618.png")
 
 # resize table to match ROC image width
 table_imageOCEC <- image_resize(table_imageOCEC,
@@ -997,36 +1005,36 @@ combinedOCEC <- image_append(c(roc_imageOCEC, table_imageOCEC), stack = TRUE)
 
 # save
 image_write(combinedOCEC,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROCcombined_20260507.png")
-##ROC OC (HGSOC+OTHER) VS BENIGN / RSS########################################
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OCEC_ROCcombined_20260618.png")
+##ROC OC (HGSOC+OTHER) VS BENIGN / RRS########################################
 #make OC VS NON-cancer DF
-OC_BEN_RSS_DF<- LAVAGE_df %>%
+OC_BEN_RRS_DF<- LAVAGE_df %>%
   filter(TYPE_BENIGN3%in% c("OC", "BENIGN"))%>% #filter for right samples
   dplyr::select("TYPE_BENIGN3", "NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"
   )
-OC_BEN_RSS_DF$TYPE_BENIGN3 <- factor(OC_BEN_RSS_DF$TYPE_BENIGN3)
-OC_BEN_RSS_DF$TYPE_BENIGN3 <- droplevels(OC_BEN_RSS_DF$TYPE_BENIGN3) #drop unused
-OC_BEN_RSS_DF$TYPE_BENIGN3  <- relevel(OC_BEN_RSS_DF$TYPE_BENIGN3 , ref = "BENIGN") #set control
-table(OC_BEN_RSS_DF$TYPE_BENIGN3, useNA = "a")
-roc_results_np_OC_BEN_RSS<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
-  roc(response = OC_BEN_RSS_DF$TYPE_BENIGN3, predictor = OC_BEN_RSS_DF[[col]])})
-names(roc_results_np_OC_BEN_RSS) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
-roc_results_np_OC_BEN_RSS
+OC_BEN_RRS_DF$TYPE_BENIGN3 <- factor(OC_BEN_RRS_DF$TYPE_BENIGN3)
+OC_BEN_RRS_DF$TYPE_BENIGN3 <- droplevels(OC_BEN_RRS_DF$TYPE_BENIGN3) #drop unused
+OC_BEN_RRS_DF$TYPE_BENIGN3  <- relevel(OC_BEN_RRS_DF$TYPE_BENIGN3 , ref = "BENIGN") #set control
+table(OC_BEN_RRS_DF$TYPE_BENIGN3, useNA = "a")
+roc_results_np_OC_BEN_RRS<- lapply(c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"), function(col) {
+  roc(response = OC_BEN_RRS_DF$TYPE_BENIGN3, predictor = OC_BEN_RRS_DF[[col]])})
+names(roc_results_np_OC_BEN_RRS) <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP")
+roc_results_np_OC_BEN_RRS
 #extract the aucs
-auc_values_np_OC_BEN_RSS <- sapply(roc_results_np_OC_BEN_RSS, function(roc_obj) {auc(roc_obj)})
-auc_values_np_OC_BEN_RSS #extracted aucs
+auc_values_np_OC_BEN_RRS <- sapply(roc_results_np_OC_BEN_RRS, function(roc_obj) {auc(roc_obj)})
+auc_values_np_OC_BEN_RRS #extracted aucs
 #roc figure 
-roc_plot_OC_BEN_RSS <- function() {
+roc_plot_OC_BEN_RRS <- function() {
   par(pty = "s") #sets square
-  plot.roc(roc_results_np_OC_BEN_RSS[["NOTCH2_NP"]], print.auc = F, col = "#dcbeff",
+  plot.roc(roc_results_np_OC_BEN_RRS[["NOTCH2_NP"]], print.auc = F, col = "#dcbeff",
            cex.main=0.8, 
            main ="Uterine lavage biomarkers OC vs Non-cancer samples",
            #xlab = "1 - Specifiškumas", 
            #ylab = "Jautrumas", 
            legacy.axes = T) #title
-  lines(roc_results_np_OC_BEN_RSS[["CTNNB1_NP"]], col = "#911eb4", lwd =2) 
-  lines(roc_results_np_OC_BEN_RSS[["DLL1_NP"]], col ="#ffd8b1", lwd =2) 
-  lines(roc_results_np_OC_BEN_RSS[["HES1_NP"]], col = "#42d4f4", lwd =2) 
+  lines(roc_results_np_OC_BEN_RRS[["CTNNB1_NP"]], col = "#911eb4", lwd =2) 
+  lines(roc_results_np_OC_BEN_RRS[["DLL1_NP"]], col ="#ffd8b1", lwd =2) 
+  lines(roc_results_np_OC_BEN_RRS[["HES1_NP"]], col = "#42d4f4", lwd =2) 
   legend("bottomright", legend = c( expression(italic("NOTCH2")),
                                     expression(italic("CTNNB1")),
                                     expression(italic("DLL1")), 
@@ -1037,25 +1045,26 @@ roc_plot_OC_BEN_RSS <- function() {
   cex = 0.7, lwd =3)
 }
 #plot
-roc_plot_OC_BEN_RSS()
+roc_plot_OC_BEN_RRS()
 #roc table
-coords_results_np_OC_BEN_RSS<- lapply(roc_results_np_OC_BEN_RSS, function(roc_obj) {
+coords_results_np_OC_BEN_RRS<- lapply(roc_results_np_OC_BEN_RRS, function(roc_obj) {
   coords(roc_obj, "best", ret = c("threshold", "accuracy", "sensitivity",
                                   "specificity"),
          transpose = FALSE)
 })
-coords_results_np_OC_BEN_RSS
+coords_results_np_OC_BEN_RRS
 #create df
-results_np_OC_BEN_RSS<- data.frame(
+results_np_OC_BEN_RRS<- data.frame(
   Predictor = c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP"),
-  AUC = auc_values_np_OC_BEN_RSS,
-  do.call(rbind,coords_results_np_OC_BEN_RSS) 
+  AUC = auc_values_np_OC_BEN_RRS,
+  do.call(rbind,coords_results_np_OC_BEN_RRS) 
 )
-results_np_OC_BEN_RSS
+results_np_OC_BEN_RRS
 #change names
-results_np_OC_BEN_RSS$Predictor <- c("NOCTH2", "CTNNB1", "DLL1", "HES1")
+results_np_OC_BEN_RRS$Predictor <- c("NOTCH2",#fixed
+                                     "CTNNB1", "DLL1", "HES1")
 #nice formating of the Table metrics for ROC OC
-gt_table_np_OC_BEN_RSS <- results_np_OC_BEN_RSS %>%
+gt_table_np_OC_BEN_RRS <- results_np_OC_BEN_RRS %>%
   gt() %>%
   tab_header(
     title = "ROC measures for uterine lavage biomarkers", 
@@ -1069,11 +1078,11 @@ gt_table_np_OC_BEN_RSS <- results_np_OC_BEN_RSS %>%
     locations = cells_body(columns = vars(Predictor))
   )
 #show
-gt_table_np_OC_BEN_RSS
+gt_table_np_OC_BEN_RRS
 # Save the plot as a PNG file
-png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RSS_ROC_20260507.png",
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RRS_ROC_20260618.png",
     width = 11, height = 11, res = 300, units = "cm")
-roc_plot_OC_BEN_RSS()
+roc_plot_OC_BEN_RRS()
 mtext(
   "B",
   side = 3,
@@ -1084,18 +1093,18 @@ mtext(
 )
 dev.off()
 #there is no other convieneat way to save gt outputs
-gtsave(gt_table_np_OC_BEN_RSS,vwidth = 10000,   
-       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RSS_ROCtable_20260507.png")
+gtsave(gt_table_np_OC_BEN_RRS,vwidth = 10000,   
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RRS_ROCtable_20260618.png")
 #import images
-roc_imageOC_BEN_RSS  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RSS_ROC_20260507.png")
-table_imageOC_BEN_RSS <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RSS_ROCtable_20260507.png")
+roc_imageOC_BEN_RRS  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RRS_ROC_20260618.png")
+table_imageOC_BEN_RRS <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RRS_ROCtable_20260618.png")
 
 # resize table to match ROC image width
-table_imageOC_BEN_RSS <- image_resize(table_imageOC_BEN_RSS,
-                                      paste0(image_info(roc_imageOC_BEN_RSS)$width, "x"))
+table_imageOC_BEN_RRS <- image_resize(table_imageOC_BEN_RRS,
+                                      paste0(image_info(roc_imageOC_BEN_RRS)$width, "x"))
 # combine vertically
-combinedOC_BEN_RSS <- image_append(c(roc_imageOC_BEN_RSS, table_imageOC_BEN_RSS), stack = TRUE)
+combinedOC_BEN_RRS <- image_append(c(roc_imageOC_BEN_RRS, table_imageOC_BEN_RRS), stack = TRUE)
 
 # save
-image_write(combinedOC_BEN_RSS,
-            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RSS_ROCcombined_20260507.png")
+image_write(combinedOC_BEN_RRS,
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/NP_OC_BEN_RRS_ROCcombined_20260618.png")
