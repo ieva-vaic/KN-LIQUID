@@ -41,10 +41,26 @@ LAVAGE_df <- LAVAGE_df %>%
 table(LAVAGE_df$TYPE_BENIGN3, useNA = "a") #now 31 benign
 DATA <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP" )
 
+
+#fix CA125
+LAVAGE_df <- LAVAGE_df %>%
+  mutate(
+    CA125 = na_if(CA125, "NA"),
+    CA125 = na_if(CA125, "neatlikta"),
+    CA125 = as.numeric(CA125),
+    CA125_group = case_when(
+      is.na(CA125) ~ NA_character_,
+      CA125 >= 35  ~ "CA125 increase",
+      CA125 < 35   ~ "No CA125 increase"
+    )
+  )
+table(LAVAGE_df$CA125_group, useNA = "ifany")#33 na
+table(LAVAGE_df$CA125, useNA = "a") #33 na
 #OC vs benign+RSS#################################
 #HGSOC vs BENIGN DF
 OC_BEN_lavage <- LAVAGE_df[c(LAVAGE_df$TYPE_BENIGN3 != "ENDOMETRIAL CANCER"),] 
 OC_BEN_lavage$TYPE_BENIGN3 <- relevel(factor(OC_BEN_lavage$TYPE_BENIGN3), ref = "BENIGN")
+OC_BEN_lavage2 <- OC_BEN_lavage
 OC_BEN_lavage <- OC_BEN_lavage[
   complete.cases(
     OC_BEN_lavage[, c(
@@ -357,6 +373,208 @@ combinedoc_be_combs <- image_append(c(roc_imageoc_be_combs, table_imageoc_be_com
 # save
 image_write(combinedoc_be_combs,
             "C:/Users/Ieva/rprojects/outputs_all/LIQUID/non-cancer-oc-combinations200260507.png")
+table(OC_BEN_lavage2$TYPE_BENIGN3)
+KN_CA2X3 <- OC_BEN_lavage2[!is.na(OC_BEN_lavage2$CA125_group), ] #remove empty
+table(KN_CA2X3$TYPE_BENIGN3) #16 vs 53
+KN_CA2X3$CA125_fN <- as.numeric(factor(KN_CA2X3$CA125_group))- 1
+roc_curve_CA2X3 <- roc(KN_CA2X3$TYPE_BENIGN3 , KN_CA2X3$CA125_fN , direction = ">")
+plot(roc_curve_CA2X3) #auc = 0.794
+auc(roc_curve_CA2X3)
+coords_ca2X3 <- coords(roc_curve_CA2X3, "best",
+                       ret=c("threshold", "accuracy", "sensitivity", "specificity", "precision", "npv",
+                             "tpr", "fpr"), transpose = FALSE)
+coords_ca2X3
+#ca125 vs combinations test
+roc.test(
+  roc_curve_CA2X3,
+  roc_list2[["NOTCH2_NP_CTNNB1_NP_DLL1_NP"]]
+)#0.09221
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list2[["NOTCH2_NP_CTNNB1_NP_HES1_NP"]]
+)#0.7339
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list2[["NOTCH2_NP_DLL1_NP_HES1_NP"]]
+)#0.9844
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list2[["CTNNB1_NP_DLL1_NP_HES1_NP"]]
+)#0.9705
+
+#duos
+roc.test(
+  roc_curve_CA2X3,
+  roc_list[["NOTCH2_NP_CTNNB1_NP"]]
+)#0.04026*
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list[["NOTCH2_NP_DLL1_NP"]]
+)#0.04491*
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list[["NOTCH2_NP_HES1_NP"]]
+)#0.6557
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list[["CTNNB1_NP_DLL1_NP"]]
+)#0.04987*
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list[["CTNNB1_NP_HES1_NP"]]
+)#0.6879
+
+roc.test(
+  roc_curve_CA2X3,
+  roc_list[["DLL1_NP_HES1_NP"]]
+)#0.9374
+
+#all 4
+roc.test(
+  roc_curve_CA2X3,
+  roc_curve2
+)#0.9114
+
+#plot with CA125#################################
+##ROC PLOT OC BEN #########################
+roc_plotOC_BEN3 <- function() {
+  par(pty = "s") #sets square
+  plot.roc(roc_list2[["NOTCH2_NP_CTNNB1_NP_DLL1_NP"]], print.auc = F, col = "#dcbeff",
+           cex.main=0.8, 
+           main ="Uterine lavage biomarkers OC vs Non-cancer samples",
+           # xlab = "1 - Specifiškumas", #lithuanian version
+           # ylab = "Jautrumas", 
+           legacy.axes = T) #title
+  lines(roc_list2[["NOTCH2_NP_CTNNB1_NP_HES1_NP"]], col = "#911eb4", lwd =2) 
+  lines(roc_list2[["NOTCH2_NP_DLL1_NP_HES1_NP"]], col ="#ffd8b1", lwd =2) 
+  lines(roc_list2[["CTNNB1_NP_DLL1_NP_HES1_NP"]], col = "#42d4f4", lwd =2) 
+  
+  
+  lines(roc_list[["NOTCH2_NP_CTNNB1_NP"]], col = "#3cb44b", lwd =2) 
+  lines(roc_list[["NOTCH2_NP_DLL1_NP"]], col ="#e6194B", lwd =2) 
+  lines(roc_list[["NOTCH2_NP_HES1_NP"]], col = "#4363d8", lwd =2) 
+  lines(roc_list[["CTNNB1_NP_DLL1_NP"]], col = "#f58231", lwd =2) 
+  lines(roc_list[["CTNNB1_NP_HES1_NP"]], col ="#a9a9a9", lwd =2) 
+  lines(roc_list[["DLL1_NP_HES1_NP"]], col = "#800000", lwd =2) 
+  
+  lines(roc_curve2, col = "black", lwd =2, lty = 2) 
+  
+  lines(roc_curve_CA2X3, col = "grey", lwd =2, lty = 3) 
+  
+  legend("bottomright", legend = c( expression(italic("NOTCH2 + CTNNB1 + DLL1")),
+                                    expression(italic("NOTCH2 + CTNNB1 + HES1")),
+                                    expression(italic("NOTCH2 + DLL1 + HES1")), 
+                                    expression(italic("CTNNB1 + DLL1 + HES1")),
+                                    
+                                    expression(italic("NOTCH2 + CTNNB1")),
+                                    expression(italic("NOTCH2 + DLL1")), 
+                                    expression(italic("NOTCH2 + HES1")),
+                                    expression(italic("CTNNB1 + DLL1")),
+                                    expression(italic("CTNNB1 + HES1")), 
+                                    expression(italic("DLL1 + HES1")),
+                                    
+                                    expression(italic("DLL1 + HES1 + CTNNB1 + NOTCH2")),
+                                    
+                                    "CA125"
+                                    
+                                    
+  ),
+  
+  col = c("#dcbeff", "#911eb4", "#ffd8b1", "#42d4f4",
+          "#3cb44b", "#e6194B","#4363d8", "#f58231", "#a9a9a9", "#800000", "black", "grey"  ), lty = 1, 
+  cex = 0.7, lwd =3)
+}
+#plot
+roc_plotOC_BEN3()
+
+
+# Save the plot as a PNG file
+png("C:/Users/Ieva/rprojects/outputs_all/LIQUID/non-cancer-oc-combs200260904.png",
+    width = 15, height = 15, res = 300, units = "cm")
+roc_plotOC_BEN3()
+# mtext(
+#   "A",
+#   side = 3,
+#   adj = -0.2,
+#   line = 1,
+#   cex = 1.2,
+#   font = 2
+# )
+dev.off()
+
+#add CA125 to the df
+final_results
+ca125_coords <- coords_ca2X3
+
+# Create the new row
+ca125_row <- data.frame(
+  Model       = "CA125",
+  Genes       = NA_integer_,
+  AUC         = as.numeric(auc(roc_curve_CA2X3)),
+  Accuracy    = as.numeric(ca125_coords$accuracy),
+  Sensitivity = as.numeric(ca125_coords$sensitivity),
+  Specificity = as.numeric(ca125_coords$specificity)
+)
+
+# Add CA125 as the final row
+final_results <- bind_rows(
+  final_results,
+  ca125_row
+)
+
+final_results
+## ---- GT table ----
+gt <- final_results %>%
+  gt() %>%
+  fmt_number(
+    columns = c(AUC, Accuracy, Sensitivity, Specificity),
+    decimals = 3
+  ) %>%
+  cols_label(
+    Model = "Gene Combination",
+    Genes = "N Genes",
+    AUC = "AUC",
+    Accuracy = "Accuracy",
+    Sensitivity = "Sensitivity",
+    Specificity = "Specificity"
+  ) %>%
+  tab_header(
+    title = "OC vs Non-cancer Logistic Regression Models"
+  ) %>%
+  tab_style(
+    style = cell_text(style = "italic"),
+    locations = cells_body(
+      columns = Model,
+      rows = seq_len(nrow(final_results) - 1)
+    )
+  )
+
+gt
+
+
+#SAVE gt
+gtsave(gt,vwidth = 10000,   
+       filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/non-cancer-oc-combstable200260910.png")
+#import images
+roc_imageoc_be_combs  <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/non-cancer-oc-combs200260904.png")
+table_imageoc_be_combs <- image_read("C:/Users/Ieva/rprojects/outputs_all/LIQUID/non-cancer-oc-combstable200260910.png")
+
+# resize table to match ROC image width
+table_imageoc_be_combs <- image_resize(table_imageoc_be_combs,
+                                       paste0(image_info(roc_imageoc_be_combs)$width, "x"))
+# combine vertically
+combinedoc_be_combs <- image_append(c(roc_imageoc_be_combs, table_imageoc_be_combs), stack = TRUE)
+
+# save
+image_write(combinedoc_be_combs,
+            "C:/Users/Ieva/rprojects/outputs_all/LIQUID/non-cancer-oc-combinations200260910.png")
 
 #EC vs non-cancer#################################################
 #HGSOC vs BENIGN DF

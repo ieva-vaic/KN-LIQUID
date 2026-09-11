@@ -1,4 +1,4 @@
-#KN-  liquid 2026 05 08
+#KN-  liquid 2026 05 08, 2026 09 04
 #FINAL PLOTS FOR LIQUID PAPER - NP ONLY - clinical features
 Sys.setenv(LANG = "en")
 library(tidyverse)
@@ -18,6 +18,7 @@ library(brglm2)
 library(htmlwidgets)
 library(webshot)
 library(magick)
+library(patchwork)
 #read RDS
 LIQUID_DF_final <- readRDS("C:/Users/Ieva/rprojects/OTHER DATA/KN_LIQUID/liquid_20260415.RDS")
 #leave lavage only
@@ -40,6 +41,22 @@ LAVAGE_df <- LAVAGE_df %>%
   )
 table(LAVAGE_df$TYPE_BENIGN3, useNA = "a") #now 31 benign
 DATA <- c("NOTCH2_NP","CTNNB1_NP","DLL1_NP","HES1_NP" )
+
+#fix CA125
+LAVAGE_df$CA125
+LAVAGE_df <- LAVAGE_df %>%
+  mutate(
+    CA125 = na_if(CA125, "NA"),
+    CA125 = na_if(CA125, "Neatlikta"),
+    CA125 = as.numeric(CA125),
+    CA125_group = case_when(
+      is.na(CA125) ~ NA_character_,
+      CA125 >= 35  ~ "CA125 increase",
+      CA125 < 35   ~ "No CA125 increase"
+    )
+  )
+table(LAVAGE_df$CA125_group, useNA = "ifany")#33 na
+table(LAVAGE_df$CA125, useNA = "a") #33 na
 
 #CHEK STAGE / GRADE ###########################
 #make an endometrial cancer df
@@ -330,12 +347,12 @@ STAGE_OC <- ggplot(GroupNP_table, aes(x=Stage_grouped , y=value, fill = variable
 
 STAGE_OC
 #save
-ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/stage_oc_20260521.png",
+ggsave("C:/Users/Ieva/rprojects/outputs_all/LIQUID/stage_oc_20260709.png",
        plot = STAGE_OC,
-       width = 15,
+       width = 12,
        height = 16,
        units = "cm",
-       dpi = 400)
+       dpi = 200)
 #t.tests OC grade###########################
 t.test(NOTCH2_NP ~ Grade_simple,
        data = KN_OC,
@@ -402,7 +419,7 @@ cor.test(KN_OC$HES1_NP,
 cor.test(KN_OC$CTNNB1_NP,
          KN_OC$Age, method = "spearman")
 
-#age correlation EC ###############################
+#ca125 correlation OC ###############################
 cor.test(KN_OC$NOTCH2_NP,
          KN_OC$CA125_num, method = "spearman")
 cor.test(KN_OC$DLL1_NP,
@@ -411,6 +428,59 @@ cor.test(KN_OC$HES1_NP,
          KN_OC$CA125_num, method = "spearman") 
 cor.test(KN_OC$CTNNB1_NP,
          KN_OC$CA125_num, method = "spearman")
+
+CA_NOTCH2 <- ggplot(KN_OC, aes(x = NOTCH2_NP, y = CA125_num)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  stat_cor(method = "spearman") +
+  theme_classic() +
+  labs(
+    x = "NOTCH2 expression",
+    y = "CA125"
+  )
+
+CA_DLL1 <- ggplot(KN_OC, aes(x = DLL1_NP, y = CA125_num)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  stat_cor(method = "spearman") +
+  theme_classic() +
+  labs(
+    x = "DLL1 expression",
+    y = "CA125"
+  )
+
+
+CA_HES1 <- ggplot(KN_OC, aes(x = HES1_NP, y = CA125_num)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  stat_cor(method = "spearman") +
+  theme_classic() +
+  labs(
+    x = "HES1 expression",
+    y = "CA125"
+  )
+
+CA_CTNNB1 <-ggplot(KN_OC, aes(x = CTNNB1_NP, y = CA125_num)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = TRUE) +
+  stat_cor(method = "spearman") +
+  theme_classic() +
+  labs(
+    x = "CTNNB1 expression",
+    y = "CA125"
+  )
+
+
+combined_plot <- wrap_plots(
+  CA_NOTCH2,
+  CA_DLL1,
+  CA_HES1,
+  CA_CTNNB1,
+  ncol = 2
+)
+
+combined_plot
+
 #Stage: stage 1 vs other #################################
 #group for convenience
 KN_OC$Stage_grouped2 <- ifelse(
@@ -514,3 +584,214 @@ STAGE_OC2 <- ggplot(GroupNP_table2, aes(x=Stage_grouped2 , y=value, fill = varia
   ))
 
 STAGE_OC2
+#CA125 in OC and benign only#######################
+KN_OC_BEN <- LAVAGE_df %>%
+  filter(TYPE != "ENDOMETRIAL CANCER")
+##NORMALCY stage OC 1 vs other groups##########################################
+normality_results_stageca <- KN_OC_BEN %>%
+  pivot_longer(
+    cols = all_of(DATA),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  group_by(CA125_group, variable) %>%
+  summarise(
+    n = sum(!is.na(value)),
+    shapiro_p = if (n >= 3 & n <= 5000) shapiro.test(value)$p.value else NA_real_,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    normal = ifelse(shapiro_p > 0.05, TRUE, FALSE)
+  )
+normality_results_stageca #all normal except CTNNB1
+
+##Variance stage OC grouped####################
+var.test(CTNNB1_NP ~ CA125_group, data = KN_OC_BEN)
+var.test(NOTCH2_NP ~ CA125_group, data = KN_OC_BEN)
+var.test(HES1_NP ~ CA125_group, data = KN_OC_BEN)
+var.test(DLL1_NP ~ CA125_group, data = KN_OC_BEN)
+#all normal variance
+
+##t.tests OC grouped CA125 1 vs other ###############
+t.test(NOTCH2_NP ~ CA125_group,
+       data = KN_OC_BEN,
+       var.equal = TRUE)#0.08071
+t.test(DLL1_NP ~ CA125_group, 
+       data = KN_OC_BEN,
+       var.equal = TRUE)#0.8902
+wilcox.test(
+  CTNNB1_NP ~ CA125_group,
+  data = KN_OC_BEN,
+  exact = FALSE
+)#0.9306
+t.test(HES1_NP~ CA125_group,
+       data = KN_OC_BEN,
+       var.equal = TRUE) #0.01266
+
+
+##plot OC grouped stage####################
+#make p values
+each.vs.ref_sig_ca <- tibble::tribble(
+  ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
+  "CA125 increase",   "No CA125 increase", 0.931, -2, "CTNNB1_NP",
+  "CA125 increase",   "No CA125 increase",0.0807, -1, "NOTCH2_NP",
+  "CA125 increase",   "No CA125 increase", 0.890, -1.5, "DLL1_NP",
+  "CA125 increase",   "No CA125 increase", 0.0127, -2, "HES1_NP",
+  
+)
+#melt table for expression
+GroupNP_ca <- melt(KN_OC_BEN[, c(40,15:18)],
+                   id.vars="CA125_group",
+                   measure.vars=c("NOTCH2_NP",
+                                  "CTNNB1_NP",
+                                  "DLL1_NP",
+                                  "HES1_NP"))
+GroupNP_ca <- GroupNP_ca[!is.na(GroupNP_ca$CA125_group), ]
+ca_OCplot <- ggplot(GroupNP_ca, aes(x=CA125_group , y=value, fill = variable)) +
+  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = CA125_group )) +
+  geom_jitter(aes(color = CA125_group ), size=1, alpha=0.5) +
+  ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
+  facet_wrap(.~ variable, nrow = 2, scales = "free",
+             labeller = labeller(
+               variable = c(
+                 "CTNNB1_NP" = "CTNNB1",
+                 "DLL1_NP" = "DLL1",
+                 "HES1_NP" = "HES1",
+                 "NOTCH2_NP" = "NOTCH2"
+               ))
+  ) +
+  add_pvalue(each.vs.ref_sig_ca, label = "p.adj") + #pvalue
+  theme_minimal()+
+  theme(
+    strip.text.x = element_text(
+      size = 12, face = "bold.italic"
+    ),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5))+
+  labs(x=NULL,
+       title = "Gene expression in uterine lavage by CA125 status in OC ")+
+  stat_boxplot(geom ='errorbar')+
+  #scale_fill_manual(values = custom_colors) +
+  #scale_color_manual(values = custom_colors) +
+  scale_y_continuous(labels = function(x) 
+    gsub("-", "\u2212", as.character(x)))+ #add long "-" signs
+  scale_fill_manual(values = c(
+    "CA125 increase" = "#3C5488",
+    "No CA125 increase"   = "#4DBBD5"
+  )) +
+  scale_color_manual(values = c(
+    "CA125 increase" = "#3C5488",
+    "No CA125 increase"   = "#4DBBD5"
+  ))
+
+ca_OCplot
+#CA125 in all cases ##############################
+LAVAGE_df_ca125_ca125 <-  LAVAGE %>%
+  filter(!is.na(CA125_group))
+##NORMALCY CA125##########################################
+normality_results_stageca <- LAVAGE_df_ca125 %>%
+  pivot_longer(
+    cols = all_of(DATA),
+    names_to = "variable",
+    values_to = "value"
+  ) %>%
+  group_by(CA125_group, variable) %>%
+  summarise(
+    n = sum(!is.na(value)),
+    shapiro_p = if (n >= 3 & n <= 5000) shapiro.test(value)$p.value else NA_real_,
+    .groups = "drop"
+  ) %>%
+  mutate(
+    normal = ifelse(shapiro_p > 0.05, TRUE, FALSE)
+  )
+normality_results_stageca #all normal except CTNNB1
+
+##Variance stage OC grouped####################
+var.test(CTNNB1_NP ~ CA125_group, data = LAVAGE_df_ca125)
+var.test(NOTCH2_NP ~ CA125_group, data = LAVAGE_df_ca125)
+var.test(HES1_NP ~ CA125_group, data = LAVAGE_df_ca125)
+var.test(DLL1_NP ~ CA125_group, data = LAVAGE_df_ca125)
+#all normal variance
+
+##t.tests OC grouped CA125 1 vs other ###############
+t.test(NOTCH2_NP ~ CA125_group,
+       data = LAVAGE_df_ca125,
+       var.equal = TRUE)#0.02086
+t.test(DLL1_NP ~ CA125_group, 
+       data = LAVAGE_df_ca125,
+       var.equal = TRUE)#0.5112
+wilcox.test(
+  CTNNB1_NP ~ CA125_group,
+  data = LAVAGE_df_ca125,
+  exact = FALSE
+)#0.7397
+t.test(HES1_NP~ CA125_group,
+       data = LAVAGE_df_ca125,
+       var.equal = TRUE) #0.005559
+
+
+##plot OC grouped stage####################
+#make p values
+each.vs.ref_sig_ca <- tibble::tribble(
+  ~group1, ~group2, ~p.adj,   ~y.position, ~variable,
+  "CA125 increase",   "No CA125 increase", 0.740, -2, "CTNNB1_NP",
+  "CA125 increase",   "No CA125 increase",0.021, -1, "NOTCH2_NP",
+  "CA125 increase",   "No CA125 increase", 0.511, -1.5, "DLL1_NP",
+  "CA125 increase",   "No CA125 increase", 0.006, -2, "HES1_NP",
+  
+)
+#melt table for expression
+GroupNP_ca <- melt(LAVAGE_df_ca125[, c(40,15:18)],
+                   id.vars="CA125_group",
+                   measure.vars=c("NOTCH2_NP",
+                                  "CTNNB1_NP",
+                                  "DLL1_NP",
+                                  "HES1_NP"))
+GroupNP_ca <- GroupNP_ca[!is.na(GroupNP_ca$CA125_group), ]
+ca_OCplot <- ggplot(GroupNP_ca, aes(x=CA125_group , y=value, fill = variable)) +
+  geom_boxplot( outlier.shape = NA , alpha=0.3, aes(fill = CA125_group )) +
+  geom_jitter(aes(color = CA125_group ), size=1, alpha=0.5) +
+  ylab(label = expression("Gene expression, normalized to  " * italic("GAPDH"))) + 
+  facet_wrap(.~ variable, nrow = 2, scales = "free",
+             labeller = labeller(
+               variable = c(
+                 "CTNNB1_NP" = "CTNNB1",
+                 "DLL1_NP" = "DLL1",
+                 "HES1_NP" = "HES1",
+                 "NOTCH2_NP" = "NOTCH2"
+               ))
+  ) +
+  add_pvalue(each.vs.ref_sig_ca, label = "p.adj") + #pvalue
+  theme_minimal()+
+  theme(
+    strip.text.x = element_text(
+      size = 12, face = "bold.italic"
+    ),
+    legend.position = "none",
+    plot.title = element_text(hjust = 0.5))+
+  labs(x=NULL,
+       title = "Gene expression in uterine lavage by CA125 status")+
+  stat_boxplot(geom ='errorbar')+
+  #scale_fill_manual(values = custom_colors) +
+  #scale_color_manual(values = custom_colors) +
+  scale_y_continuous(labels = function(x) 
+    gsub("-", "\u2212", as.character(x)))+ #add long "-" signs
+  scale_fill_manual(values = c(
+    "CA125 increase" = "#3C5488",
+    "No CA125 increase"   = "#4DBBD5"
+  )) +
+  scale_color_manual(values = c(
+    "CA125 increase" = "#3C5488",
+    "No CA125 increase"   = "#4DBBD5"
+  ))
+
+ca_OCplot
+#save
+ggsave(
+  filename = "C:/Users/Ieva/rprojects/outputs_all/LIQUID/ca125_20260908.png",
+  plot = ca_OCplot,
+  width = 6,
+  height = 7,
+  dpi = 300,
+  bg = "white"
+)
