@@ -301,7 +301,7 @@ each.vs.ref_sig <- tibble::tribble(
 
 )
 #melt table for expression
-GroupNP_table <- melt(KN_OC[, c(40,15:18)],
+GroupNP_table <- melt(KN_OC[, c(41,15:18)],
                       id.vars="Stage_grouped",
                       measure.vars=c("NOTCH2_NP",
                                      "CTNNB1_NP",
@@ -383,7 +383,7 @@ t.test(HES1_NP~ Grade_simple,
 #Overall normalcy EC#####################
 shapiro.test(KN_ENDOMETRIAL$Age)
 KN_ENDOMETRIAL$CA125_num <- as.numeric(KN_ENDOMETRIAL$CA125_num)
-shapiro.test(na.omit(KN_ENDOMETRIAL$CA125_num))#too little values
+#shapiro.test(na.omit(KN_ENDOMETRIAL$CA125_num))#too little values
 
 shapiro.test(KN_ENDOMETRIAL$NOTCH2_NP) #not normal0.01915
 shapiro.test(KN_ENDOMETRIAL$DLL1_NP)
@@ -539,7 +539,7 @@ each.vs.ref_sig_stage2 <- tibble::tribble(
   
 )
 #melt table for expression
-GroupNP_table2 <- melt(KN_OC[, c(41,15:18)],
+GroupNP_table2 <- melt(KN_OC[, c(42,15:18)],
                        id.vars="Stage_grouped2",
                        measure.vars=c("NOTCH2_NP",
                                       "CTNNB1_NP",
@@ -686,7 +686,7 @@ ca_OCplot <- ggplot(GroupNP_ca, aes(x=CA125_group , y=value, fill = variable)) +
 
 ca_OCplot
 #CA125 in all cases ##############################
-LAVAGE_df_ca125_ca125 <-  LAVAGE %>%
+LAVAGE_df_ca125 <-  LAVAGE_df %>%
   filter(!is.na(CA125_group))
 ##NORMALCY CA125##########################################
 normality_results_stageca <- LAVAGE_df_ca125 %>%
